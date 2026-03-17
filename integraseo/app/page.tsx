@@ -7,6 +7,7 @@ import { CalendarPanel } from "@/components/calendar-panel"
 import { RemindersPanel } from "@/components/reminders-panel"
 import { BrigadasPanel } from "@/components/brigadas-panel"
 import { SupernumerariosPanel } from "@/components/supernumerarios-panel"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useStore } from "@/lib/store"
 
 type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios"
@@ -35,6 +36,7 @@ export default function Home() {
         <h1 className="text-xl font-semibold text-foreground">
           {NAV_ITEMS.find((n) => n.id === currentView)?.label ?? "Integraseo"}
         </h1>
+        <ThemeToggle />
       </header>
 
       {/* Main Content */}
