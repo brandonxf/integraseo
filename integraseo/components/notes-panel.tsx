@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { Edit, Trash2, Plus, FileText } from "lucide-react"
 import type { ContractNote } from "@/lib/types"
 
@@ -33,6 +34,8 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ date: todayStr, time: timeStr, content: "" })
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const openAdd = () => {
     setEditingId(null)
@@ -44,6 +47,11 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
     setEditingId(note.id)
     setForm({ date: note.date, time: note.time, content: note.content })
     setModalOpen(true)
+  }
+
+  const openDelete = (id: string) => {
+    setDeletingId(id)
+    setConfirmOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,9 +89,7 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={() => {
-                    if (confirm("¿Eliminar esta nota?")) deleteNote(contractId, note.id)
-                  }}
+                  onClick={() => openDelete(note.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
@@ -121,6 +127,14 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Eliminar nota"
+        description="¿Estás seguro de que deseas eliminar esta nota? Esta acción no se puede deshacer."
+        onConfirm={() => deletingId && deleteNote(contractId, deletingId)}
+      />
     </div>
   )
 }

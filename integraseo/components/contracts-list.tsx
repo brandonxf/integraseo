@@ -4,58 +4,63 @@ import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Edit, Trash2, FileText, ChevronLeft, Plus, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ConfirmDialog } from "@/components/confirm-dialog"
+import { Edit, Trash2, FileText, ChevronLeft, Plus, X, AlertCircle } from "lucide-react"
 import { NotesPanel } from "@/components/notes-panel"
 import { VisitsPanel } from "@/components/visits-panel"
 import type { ValueItem } from "@/lib/types"
 
 function getStatusColor(status: string) {
   switch (status) {
-    case "active": return "bg-green-500"
+    case "active":    return "bg-green-500"
     case "completed": return "bg-blue-500"
-    case "pending": return "bg-yellow-500"
-    default: return "bg-gray-500"
+    case "pending":   return "bg-yellow-500"
+    default:          return "bg-gray-500"
   }
 }
 
 function getStatusLabel(status: string) {
   switch (status) {
-    case "active": return "Activo"
+    case "active":    return "Activo"
     case "completed": return "Completado"
-    case "pending": return "Pendiente"
-    default: return status
+    case "pending":   return "Pendiente"
+    default:          return status
   }
 }
 
 export function ContractsList() {
-  const contracts = useStore((state) => state.contracts)
-  const addContract = useStore((state) => state.addContract)
-  const updateContract = useStore((state) => state.updateContract)
-  const deleteContract = useStore((state) => state.deleteContract)
-  const addWorker = useStore((state) => state.addWorker)
-  const deleteWorker = useStore((state) => state.deleteWorker)
+  const contracts     = useStore((s) => s.contracts)
+  const addContract   = useStore((s) => s.addContract)
+  const updateContract = useStore((s) => s.updateContract)
+  const deleteContract = useStore((s) => s.deleteContract)
+  const addWorker     = useStore((s) => s.addWorker)
+  const deleteWorker  = useStore((s) => s.deleteWorker)
 
-  const [search, setSearch] = useState("")
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("info")
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [valueItems, setValueItems] = useState<ValueItem[]>([])
-  const [valueInput, setValueInput] = useState("")
+  const [search, setSearch]               = useState("")
+  const [selectedId, setSelectedId]       = useState<string | null>(null)
+  const [activeTab, setActiveTab]         = useState("info")
+  const [modalOpen, setModalOpen]         = useState(false)
+  const [editingId, setEditingId]         = useState<string | null>(null)
+  const [valueItems, setValueItems]       = useState<ValueItem[]>([])
+  const [valueInput, setValueInput]       = useState("")
+  const [valueError, setValueError]       = useState(false)
   const [workerModalOpen, setWorkerModalOpen] = useState(false)
-  const [workerForm, setWorkerForm] = useState({ name: "", position: "", phone: "" })
+  const [workerForm, setWorkerForm]       = useState({ name: "", position: "", phone: "" })
+
+  // Confirm dialogs
+  const [deleteContractOpen, setDeleteContractOpen] = useState(false)
+  const [deleteWorkerOpen, setDeleteWorkerOpen]     = useState(false)
+  const [workerToDelete, setWorkerToDelete]         = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    name: "", client: "", location: "", status: "active" as "active" | "completed" | "pending",
+    name: "", client: "", location: "",
+    status: "active" as "active" | "completed" | "pending",
   })
-
-  const today = new Date().toISOString().split("T")[0]
 
   const selected = contracts.find((c) => c.id === selectedId)
 
@@ -63,6 +68,8 @@ export function ContractsList() {
     setEditingId(null)
     setForm({ name: "", client: "", location: "", status: "active" })
     setValueItems([])
+    setValueInput("")
+    setValueError(false)
     setModalOpen(true)
   }
 
@@ -72,6 +79,8 @@ export function ContractsList() {
     setEditingId(id)
     setForm({ name: c.name, client: c.client, location: c.location || "", status: c.status })
     setValueItems(c.valueItems || [])
+    setValueInput("")
+    setValueError(false)
     setModalOpen(true)
   }
 
@@ -90,8 +99,9 @@ export function ContractsList() {
     if (match) {
       setValueItems([...valueItems, { quantity: parseInt(match[1]), type: match[2] }])
       setValueInput("")
+      setValueError(false)
     } else {
-      alert('Formato: "1 jardinero"')
+      setValueError(true)
     }
   }
 
@@ -103,12 +113,77 @@ export function ContractsList() {
     setWorkerForm({ name: "", position: "", phone: "" })
   }
 
+  const handleDeleteContract = async () => {
+    if (!selectedId) return
+    await deleteContract(selectedId)
+    setSelectedId(null)
+  }
+
+  const handleDeleteWorker = async () => {
+    if (!selectedId || !workerToDelete) return
+    await deleteWorker(selectedId, workerToDelete)
+    setWorkerToDelete(null)
+  }
+
   const filtered = contracts.filter((c) => {
     const q = search.toLowerCase()
     return !q || c.name.toLowerCase().includes(q) || c.client.toLowerCase().includes(q)
   })
 
-  // Detail view
+  const FormBody = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2"><Label>Nombre del Contrato</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
+      <div className="space-y-2"><Label>Cliente</Label><Input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} required /></div>
+      <div className="space-y-2"><Label>Ubicación</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
+      <div className="space-y-2">
+        <Label>Valor Agregado</Label>
+        <div className="space-y-1">
+          {valueItems.map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm bg-muted/50 px-2 py-1 rounded-md">
+              <span className="flex-1">{item.quantity} {item.type}</span>
+              <button type="button" onClick={() => setValueItems(valueItems.filter((_, j) => j !== i))}>
+                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              value={valueInput}
+              onChange={(e) => { setValueInput(e.target.value); setValueError(false) }}
+              placeholder="ej: 1 jardinero"
+              className={valueError ? "border-destructive focus-visible:ring-destructive/50" : ""}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValueItem() } }}
+            />
+            {valueError && (
+              <p className="flex items-center gap-1 text-xs text-destructive mt-1">
+                <AlertCircle className="h-3 w-3" /> Formato correcto: "1 jardinero"
+              </p>
+            )}
+          </div>
+          <Button type="button" variant="outline" onClick={addValueItem}>+</Button>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Estado</Label>
+        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "active" | "completed" | "pending" })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Activo</SelectItem>
+            <SelectItem value="pending">Pendiente</SelectItem>
+            <SelectItem value="completed">Completado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
+        <Button type="submit">Guardar</Button>
+      </div>
+    </form>
+  )
+
+  // ── Detail view ──────────────────────────────────────────────────────────
   if (selected) {
     return (
       <div className="flex flex-col h-full">
@@ -127,15 +202,22 @@ export function ContractsList() {
 
         {/* Tabs */}
         <div className="flex border-b border-border overflow-x-auto">
-          {["info", "notes", "workers", "visits"].map((tab) => (
+          {[
+            { id: "info",    label: "Información" },
+            { id: "notes",   label: "Notas"       },
+            { id: "workers", label: "Operarios"   },
+            { id: "visits",  label: "Visitas"     },
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium capitalize whitespace-nowrap transition-colors ${
-                activeTab === tab ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab === "info" ? "Información" : tab === "notes" ? "Notas" : tab === "workers" ? "Operarios" : "Visitas"}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -148,9 +230,9 @@ export function ContractsList() {
               <div className="flex justify-between items-start">
                 <span className="text-sm font-medium text-muted-foreground">Valor Agregado</span>
                 <div className="text-right text-sm">
-                  {selected.valueItems?.length ? selected.valueItems.map((v, i) => (
-                    <p key={i}>{v.quantity} {v.type}</p>
-                  )) : <span>No especificado</span>}
+                  {selected.valueItems?.length
+                    ? selected.valueItems.map((v, i) => <p key={i}>{v.quantity} {v.type}</p>)
+                    : <span>No especificado</span>}
                 </div>
               </div>
               <div className="flex justify-between items-center">
@@ -158,28 +240,26 @@ export function ContractsList() {
                 <Badge className={getStatusColor(selected.status)}>{getStatusLabel(selected.status)}</Badge>
               </div>
               <div className="pt-4 border-t border-border">
-                <Button variant="destructive" size="sm" className="w-full" onClick={() => {
-                  if (confirm("¿Eliminar este contrato? Esta acción no se puede deshacer.")) {
-                    deleteContract(selected.id)
-                    setSelectedId(null)
-                  }
-                }}>
+                <Button
+                  variant="destructive" size="sm" className="w-full"
+                  onClick={() => setDeleteContractOpen(true)}
+                >
                   <Trash2 className="h-4 w-4 mr-2" /> Eliminar Contrato
                 </Button>
               </div>
             </div>
           )}
 
-          {activeTab === "notes" && <NotesPanel contractId={selected.id} />}
+          {activeTab === "notes"   && <NotesPanel contractId={selected.id} />}
 
           {activeTab === "workers" && (
             <div className="space-y-3">
               <Button size="sm" className="w-full" onClick={() => setWorkerModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" /> Añadir Operario
               </Button>
-              {selected.workers?.length === 0 ? (
+              {!selected.workers?.length ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>No hay operarios</p>
+                  <p className="font-medium">No hay operarios</p>
                   <p className="text-sm">Añade operarios a este contrato</p>
                 </div>
               ) : (
@@ -191,7 +271,10 @@ export function ContractsList() {
                         <p className="text-sm text-muted-foreground">{w.position}</p>
                         {w.phone && <p className="text-sm text-muted-foreground">{w.phone}</p>}
                       </div>
-                      <Button variant="ghost" size="icon" onClick={() => deleteWorker(selected.id, w.id)}>
+                      <Button
+                        variant="ghost" size="icon"
+                        onClick={() => { setWorkerToDelete(w.id); setDeleteWorkerOpen(true) }}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -204,7 +287,29 @@ export function ContractsList() {
           {activeTab === "visits" && <VisitsPanel contractId={selected.id} />}
         </div>
 
-        {/* Worker add modal */}
+        {/* Confirm: delete contract */}
+        <ConfirmDialog
+          open={deleteContractOpen}
+          onOpenChange={setDeleteContractOpen}
+          title="Eliminar Contrato"
+          description={`¿Estás seguro de que deseas eliminar "${selected.name}"? Esta acción no se puede deshacer y se perderán todas sus notas, operarios y visitas.`}
+          confirmLabel="Eliminar"
+          destructive
+          onConfirm={handleDeleteContract}
+        />
+
+        {/* Confirm: delete worker */}
+        <ConfirmDialog
+          open={deleteWorkerOpen}
+          onOpenChange={setDeleteWorkerOpen}
+          title="Eliminar Operario"
+          description="¿Estás seguro de que deseas eliminar este operario del contrato?"
+          confirmLabel="Eliminar"
+          destructive
+          onConfirm={handleDeleteWorker}
+        />
+
+        {/* Add worker modal */}
         <Dialog open={workerModalOpen} onOpenChange={setWorkerModalOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Nuevo Operario</DialogTitle></DialogHeader>
@@ -223,49 +328,15 @@ export function ContractsList() {
         {/* Edit contract modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editingId ? "Editar Contrato" : "Nuevo Contrato"}</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2"><Label>Nombre del Contrato</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-              <div className="space-y-2"><Label>Cliente</Label><Input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} required /></div>
-              <div className="space-y-2"><Label>Ubicación</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
-              <div className="space-y-2">
-                <Label>Valor Agregado</Label>
-                <div className="space-y-1">
-                  {valueItems.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm">
-                      <span className="flex-1">{item.quantity} {item.type}</span>
-                      <button type="button" onClick={() => setValueItems(valueItems.filter((_, j) => j !== i))}><X className="h-4 w-4" /></button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input value={valueInput} onChange={(e) => setValueInput(e.target.value)} placeholder="ej: 1 jardinero" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValueItem() } }} />
-                  <Button type="button" variant="outline" onClick={addValueItem}>+</Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "active" | "completed" | "pending" })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="completed">Completado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-                <Button type="submit">Guardar</Button>
-              </div>
-            </form>
+            <DialogHeader><DialogTitle>Editar Contrato</DialogTitle></DialogHeader>
+            <FormBody />
           </DialogContent>
         </Dialog>
       </div>
     )
   }
 
-  // List view
+  // ── List view ─────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border">
@@ -292,8 +363,10 @@ export function ContractsList() {
         ) : (
           <div className="space-y-3">
             {filtered.map((contract) => {
-              const initials = contract.name.substring(0, 2).toUpperCase()
-              const lastNote = contract.notes?.length ? contract.notes[contract.notes.length - 1].content : contract.client
+              const initials  = contract.name.substring(0, 2).toUpperCase()
+              const lastNote  = contract.notes?.length
+                ? contract.notes[contract.notes.length - 1].content
+                : contract.client
               return (
                 <div
                   key={contract.id}
@@ -317,45 +390,11 @@ export function ContractsList() {
         )}
       </div>
 
-      {/* Add contract FAB modal */}
+      {/* New contract modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nuevo Contrato</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Nombre del Contrato</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-            <div className="space-y-2"><Label>Cliente</Label><Input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} required /></div>
-            <div className="space-y-2"><Label>Ubicación</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
-            <div className="space-y-2">
-              <Label>Valor Agregado</Label>
-              <div className="space-y-1">
-                {valueItems.map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="flex-1">{item.quantity} {item.type}</span>
-                    <button type="button" onClick={() => setValueItems(valueItems.filter((_, j) => j !== i))}><X className="h-4 w-4" /></button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input value={valueInput} onChange={(e) => setValueInput(e.target.value)} placeholder="ej: 1 jardinero" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValueItem() } }} />
-                <Button type="button" variant="outline" onClick={addValueItem}>+</Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Estado</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "active" | "completed" | "pending" })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="completed">Completado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">Guardar</Button>
-            </div>
-          </form>
+          <FormBody />
         </DialogContent>
       </Dialog>
     </div>

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/confirm-dialog"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import type { Visit } from "@/lib/types"
 
@@ -26,8 +27,10 @@ export function VisitsPanel({ contractId }: VisitsPanelProps) {
   const now = new Date()
   const [currentMonth, setCurrentMonth] = useState(now.getMonth())
   const [currentYear, setCurrentYear] = useState(now.getFullYear())
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmVisitOpen, setConfirmVisitOpen] = useState(false)
+  const [deleteVisitOpen, setDeleteVisitOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState("")
+  const [visitToDelete, setVisitToDelete] = useState<string | null>(null)
 
   const prevMonth = () => {
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
@@ -46,17 +49,16 @@ export function VisitsPanel({ contractId }: VisitsPanelProps) {
     return visits.some((v) => v.date === dateStr)
   }
 
-  const isToday = (day: number) => {
-    return day === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear()
-  }
+  const isToday = (day: number) =>
+    day === now.getDate() && currentMonth === now.getMonth() && currentYear === now.getFullYear()
 
   const handleDayClick = (day: number) => {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
     setSelectedDate(dateStr)
-    setConfirmOpen(true)
+    setConfirmVisitOpen(true)
   }
 
-  const confirmVisit = async () => {
+  const handleConfirmVisit = async () => {
     const nowTime = new Date()
     const time = nowTime.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
     await addVisit(contractId, {
@@ -68,13 +70,11 @@ export function VisitsPanel({ contractId }: VisitsPanelProps) {
       contractId,
       contractName: contract?.name || "",
     })
-    setConfirmOpen(false)
   }
 
-  const handleDeleteVisit = async (visitId: string) => {
-    if (confirm("¿Eliminar esta visita?")) {
-      await deleteVisit(contractId, visitId)
-    }
+  const handleDeleteVisit = (visitId: string) => {
+    setVisitToDelete(visitId)
+    setDeleteVisitOpen(true)
   }
 
   const confirmedVisits = [...visits]
@@ -134,23 +134,40 @@ export function VisitsPanel({ contractId }: VisitsPanelProps) {
                     Confirmada el {new Date(visit.confirmedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleDeleteVisit(visit.id)} className="text-destructive">✕</Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleDeleteVisit(visit.id)}
+                >✕</Button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      {/* Confirm add visit dialog */}
+      <Dialog open={confirmVisitOpen} onOpenChange={setConfirmVisitOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Confirmar Visita</DialogTitle></DialogHeader>
           <p className="text-sm">¿Desea confirmar la visita para el día <span className="font-semibold">{selectedDateFormatted}</span>?</p>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>No</Button>
-            <Button onClick={confirmVisit}>Sí</Button>
+            <Button variant="outline" onClick={() => setConfirmVisitOpen(false)}>No</Button>
+            <Button onClick={() => { handleConfirmVisit(); setConfirmVisitOpen(false) }}>Sí</Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm delete visit dialog */}
+      <ConfirmDialog
+        open={deleteVisitOpen}
+        onOpenChange={setDeleteVisitOpen}
+        title="Eliminar visita"
+        description="¿Estás seguro de que deseas eliminar esta visita? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={() => { if (visitToDelete) deleteVisit(contractId, visitToDelete) }}
+      />
     </div>
   )
 }
