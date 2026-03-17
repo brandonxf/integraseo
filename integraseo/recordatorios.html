@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recordatorios</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#07105e">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 id="header-title">Recordatorios</h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main" id="app-main">
+            <div class="reminders-container" id="reminders-container">
+                <div class="reminders-controls" style="margin-bottom:1rem;display:flex;gap:0.5rem;align-items:center;">
+                    <label for="filter-contract" style="font-size:0.95rem;color:#333;">Filtrar por contrato:</label>
+                    <select id="filter-contract" style="padding:0.4rem;border-radius:6px;border:1px solid #ccc;background:#fff;">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="reminders-list" id="reminders-list"></div>
+            </div>
+        </main>
+
+        <!-- Modal para editar recordatorio -->
+        <div class="modal hidden" id="modal-reminder">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Editar Recordatorio</h3>
+                    <button class="btn-close" id="btn-close-reminder-modal">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <form id="form-reminder">
+                    <div class="form-group">
+                        <label for="reminder-title">Título</label>
+                        <input type="text" id="reminder-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-contract">Contrato (opcional)</label>
+                        <select id="reminder-contract">
+                            <option value="">-- Sin contrato --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-date">Fecha</label>
+                        <input type="date" id="reminder-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-time">Hora</label>
+                        <input type="time" id="reminder-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-description">Descripción</label>
+                        <textarea id="reminder-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="btn-cancel-reminder">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+    <!-- Modal para editar recordatorio -->
+    <div class="modal hidden" id="modal-reminder">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-reminder-title">Editar Recordatorio</h3>
+                <button class="btn-close" id="btn-close-reminder-modal" aria-label="Cerrar">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <form id="form-reminder">
+                <div class="form-group">
+                    <label for="reminder-title">Título</label>
+                    <input type="text" id="reminder-title" class="input" required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="reminder-contract">Contrato (opcional)</label>
+                    <select id="reminder-contract">
+                        <option value="">-- Sin contrato --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reminder-date">Fecha</label>
+                    <input type="date" id="reminder-date" class="input" required>
+                </div>
+                <div class="form-group">
+                    <label for="reminder-time">Hora</label>
+                    <input type="time" id="reminder-time" class="input" required>
+                </div>
+                <div class="form-group">
+                    <label for="reminder-description">Descripción</label>
+                    <textarea id="reminder-description" class="input" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-reminder">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+            <a href="index.html" class="nav-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                <span>Contratos</span>
+            </a>
+            <a href="calendario.html" class="nav-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>Calendario</span>
+            </a>
+            <a href="recordatorios.html" class="nav-item active">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span>Recordatorios</span>
+            </a>
+            <a href="brigadas.html" class="nav-item">
+                <!-- Icono de brigadas: versión consistente con los demás iconos -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <circle cx="17" cy="7" r="3"></circle>
+                </svg>
+                <span>Brigadas</span>
+            </a>
+            <a href="supernumerarios.html" class="nav-item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>Supernumerarios</span>
+            </a>
+        </nav>
+    <script type="module" src="recordatorios.js"></script>
+    <!-- Register service worker for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(reg) { console.log('ServiceWorker registrado:', reg.scope); })
+                    .catch(function(err) { console.warn('Error registrando ServiceWorker:', err); });
+            });
+        }
+    </script>
+</body>
+</html>

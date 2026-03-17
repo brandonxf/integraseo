@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Card } from "@/components/ui/card"
@@ -11,10 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Bell, Trash2, Edit, CheckCircle2, Circle } from "lucide-react"
-import { format, isPast, isToday, isTomorrow } from "date-fns"
-import { es } from "date-fns/locale"
+import { Plus, Trash2, Edit } from "lucide-react"
 
 export function RemindersPanel() {
   const contracts = useStore((state) => state.contracts)
@@ -25,202 +21,110 @@ export function RemindersPanel() {
   const toggleReminder = useStore((state) => state.toggleReminder)
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingReminderId, setEditingReminderId] = useState<string | null>(null)
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all")
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [filterContractId, setFilterContractId] = useState("")
   const [formData, setFormData] = useState({
     title: "",
+    date: "",
+    time: "",
     description: "",
-    dueDate: "",
     contractId: "",
   })
 
-  const handleOpenDialog = (reminderId?: string) => {
-    if (reminderId) {
-      const reminder = reminders.find((r) => r.id === reminderId)
-      if (reminder) {
-        setFormData({
-          title: reminder.title,
-          description: reminder.description,
-          dueDate: reminder.dueDate,
-          contractId: reminder.contractId || "",
-        })
-        setEditingReminderId(reminderId)
-      }
-    } else {
-      setFormData({
-        title: "",
-        description: "",
-        dueDate: "",
-        contractId: "",
-      })
-      setEditingReminderId(null)
-    }
+  const today = new Date().toISOString().split("T")[0]
+  const nowTime = new Date().toTimeString().slice(0, 5)
+
+  const openAdd = () => {
+    setEditingId(null)
+    setFormData({ title: "", date: today, time: nowTime, description: "", contractId: "" })
     setIsDialogOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const openEdit = (id: string) => {
+    const r = reminders.find((r) => r.id === id)
+    if (!r) return
+    setEditingId(id)
+    setFormData({
+      title: r.title,
+      date: r.date,
+      time: r.time,
+      description: r.description || "",
+      contractId: r.contractId || "",
+    })
+    setIsDialogOpen(true)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (editingReminderId) {
-      updateReminder(editingReminderId, {
-        title: formData.title,
-        description: formData.description,
-        dueDate: formData.dueDate,
-        contractId: formData.contractId || undefined,
-      })
+    const contractName = contracts.find((c) => c.id === formData.contractId)?.name || undefined
+    if (editingId) {
+      await updateReminder(editingId, { ...formData, contractName })
     } else {
-      addReminder({
-        title: formData.title,
-        description: formData.description,
-        dueDate: formData.dueDate,
-        contractId: formData.contractId || undefined,
-        completed: false,
-      })
+      await addReminder({ ...formData, contractName, completed: false })
     }
-
     setIsDialogOpen(false)
   }
 
-  const getDateBadge = (dueDate: string) => {
-    const date = new Date(dueDate)
-    if (isPast(date) && !isToday(date)) {
-      return <Badge className="bg-red-500">Vencido</Badge>
-    }
-    if (isToday(date)) {
-      return <Badge className="bg-orange-500">Hoy</Badge>
-    }
-    if (isTomorrow(date)) {
-      return <Badge className="bg-yellow-500">Mañana</Badge>
-    }
-    return <Badge variant="secondary">{format(date, "dd/MM/yyyy", { locale: es })}</Badge>
-  }
-
-  const filteredReminders = reminders
-    .filter((r) => {
-      if (filter === "pending") return !r.completed
-      if (filter === "completed") return r.completed
-      return true
-    })
-    .sort((a, b) => {
-      // Sort by completed status first, then by date
-      if (a.completed !== b.completed) return a.completed ? 1 : -1
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-    })
-
-  const pendingCount = reminders.filter((r) => !r.completed).length
-  const overdueCount = reminders.filter(
-    (r) => !r.completed && isPast(new Date(r.dueDate)) && !isToday(new Date(r.dueDate)),
-  ).length
+  const sorted = [...reminders]
+    .filter((r) => !filterContractId || r.contractId === filterContractId)
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Recordatorios</h2>
-            <div className="flex gap-2 mt-1">
-              <span className="text-sm text-muted-foreground">{pendingCount} pendientes</span>
-              {overdueCount > 0 && <span className="text-sm text-red-500">{overdueCount} vencidos</span>}
-            </div>
-          </div>
-          <Button size="sm" onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo
+      <div className="p-4 border-b border-border">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Recordatorios</h2>
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-1" /> Nuevo
           </Button>
         </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant={filter === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("all")}
-            className="flex-1"
-          >
-            Todos
-          </Button>
-          <Button
-            variant={filter === "pending" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("pending")}
-            className="flex-1"
-          >
-            Pendientes
-          </Button>
-          <Button
-            variant={filter === "completed" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter("completed")}
-            className="flex-1"
-          >
-            Completados
-          </Button>
-        </div>
+        <Select value={filterContractId} onValueChange={setFilterContractId}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Filtrar por contrato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {contracts.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {filteredReminders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Bell className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No hay recordatorios</h3>
-            <p className="text-muted-foreground">
-              {filter === "all"
-                ? "Crea tu primer recordatorio"
-                : filter === "pending"
-                  ? "No tienes recordatorios pendientes"
-                  : "No has completado ningún recordatorio"}
-            </p>
+        {sorted.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
+            <p className="font-medium">No hay recordatorios</p>
+            <p className="text-sm">Añade recordatorios para no olvidar tareas importantes</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredReminders.map((reminder) => (
+            {sorted.map((reminder) => (
               <Card key={reminder.id} className={`p-4 ${reminder.completed ? "opacity-60" : ""}`}>
-                <div className="flex items-start gap-3">
-                  <button
-                    onClick={() => toggleReminder(reminder.id)}
-                    className="mt-1 text-primary hover:text-primary/80 transition-colors"
-                  >
-                    {reminder.completed ? (
-                      <CheckCircle2 className="h-5 w-5 fill-current" />
-                    ) : (
-                      <Circle className="h-5 w-5" />
-                    )}
-                  </button>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className={`font-semibold ${reminder.completed ? "line-through" : ""}`}>{reminder.title}</h3>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {!reminder.completed && (
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(reminder.id)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("¿Eliminar este recordatorio?")) {
-                              deleteReminder(reminder.id)
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {reminder.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{reminder.description}</p>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                      {getDateBadge(reminder.dueDate)}
-                      {reminder.contractId && (
-                        <Badge variant="outline">
-                          {contracts.find((c) => c.id === reminder.contractId)?.name || "Contrato"}
-                        </Badge>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1">
+                    <button
+                      onClick={() => toggleReminder(reminder.id)}
+                      className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 ${reminder.completed ? "bg-primary border-primary" : "border-muted-foreground"}`}
+                    />
+                    <div className="flex-1">
+                      <p className={`font-medium ${reminder.completed ? "line-through" : ""}`}>{reminder.title}</p>
+                      <p className="text-sm text-muted-foreground">{reminder.date} {reminder.time}</p>
+                      {reminder.contractName && (
+                        <p className="text-xs text-muted-foreground">Contrato: {reminder.contractName}</p>
+                      )}
+                      {reminder.description && (
+                        <p className="text-sm mt-1">{reminder.description}</p>
                       )}
                     </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(reminder.id)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteReminder(reminder.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -232,66 +136,40 @@ export function RemindersPanel() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingReminderId ? "Editar Recordatorio" : "Nuevo Recordatorio"}</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Recordatorio" : "Nuevo Recordatorio"}</DialogTitle>
           </DialogHeader>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Título</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
+              <Label>Título</Label>
+              <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora</Label>
+                <Input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} required />
+              </div>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="dueDate">Fecha de vencimiento</Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                required
-              />
+              <Label>Descripción</Label>
+              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="contract">Contrato (opcional)</Label>
-              <Select
-                value={formData.contractId}
-                onValueChange={(value) => setFormData({ ...formData, contractId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin contrato" />
-                </SelectTrigger>
+              <Label>Contrato (opcional)</Label>
+              <Select value={formData.contractId} onValueChange={(v) => setFormData({ ...formData, contractId: v })}>
+                <SelectTrigger><SelectValue placeholder="Sin contrato" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sin contrato</SelectItem>
-                  {contracts.map((contract) => (
-                    <SelectItem key={contract.id} value={contract.id}>
-                      {contract.name}
-                    </SelectItem>
-                  ))}
+                  {contracts.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit">{editingReminderId ? "Guardar" : "Crear"}</Button>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit">{editingId ? "Guardar" : "Crear"}</Button>
             </div>
           </form>
         </DialogContent>

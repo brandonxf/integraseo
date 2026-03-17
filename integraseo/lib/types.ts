@@ -1,43 +1,76 @@
+export interface ValueItem {
+  quantity: number
+  type: string
+}
+
+export interface ContractNote {
+  id: string
+  date: string
+  time: string
+  content: string
+}
+
+export interface ContractWorker {
+  id: string
+  name: string
+  position: string
+  phone?: string
+}
+
+export interface Visit {
+  id: string
+  date: string
+  time: string
+  createdAt: string
+  confirmedAt: string
+  status: "confirmed"
+  contractId: string
+  contractName: string
+}
+
 export interface Contract {
   id: string
   name: string
   client: string
-  startDate: string
-  endDate: string
+  location?: string
+  valueItems: ValueItem[]
   status: "active" | "completed" | "pending"
-  description: string
-  workers: string[]
-}
-
-export interface Note {
-  id: string
-  contractId: string
-  content: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface Worker {
-  id: string
-  name: string
-  phone: string
-  email: string
-  contractIds: string[]
+  notes: ContractNote[]
+  workers: ContractWorker[]
+  visits: Visit[]
+  createdAt?: string
 }
 
 export interface CalendarEvent {
   id: string
   title: string
   date: string
-  contractId?: string
-  type: "meeting" | "deadline" | "note" | "other"
+  time: string
+  description?: string
 }
 
 export interface Reminder {
   id: string
   title: string
-  description: string
-  dueDate: string
+  date: string
+  time: string
+  description?: string
   contractId?: string
+  contractName?: string
   completed: boolean
+}
+
+export interface BrigadaServices {
+  jardineria: boolean
+  aseo: boolean
+  updatedAt?: string
+}
+
+export interface Supernumerario {
+  fecha: string
+  nombre: string
+  trabajo: string
+  contratoId: string
+  createdAt?: string
+  updatedAt?: string
 }
