@@ -81,9 +81,9 @@ export async function generateContractPDF(contract: Contract) {
   fill(...NAVY); rect(0, 0, W, 40, "F")
 
   // White accent stripe
-  fill(...WHITE); doc.setGState(new doc.GState({ opacity: 0.08 }))
-  rect(0, 30, W, 10, "F")
-  doc.setGState(new doc.GState({ opacity: 1 }))
+  fill(255, 255, 255)
+  doc.setFillColor(255, 255, 255)
+  rect(0, 33, W, 1, "F")
 
   // Logo / brand text
   fw("bold"); fs(18); col(...WHITE)
