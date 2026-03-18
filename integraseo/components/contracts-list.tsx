@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import type { ValueItem } from "@/lib/types"
 import { generateContractPDF } from "@/lib/generate-pdf"
+import { useToast } from "@/lib/toast"
 import { HistoryPanel } from "@/components/history-panel"
 
 // ── Status pill ────────────────────────────────────────────────────────────────
@@ -166,6 +167,8 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const addWorker      = useStore((s) => s.addWorker)
   const deleteWorker   = useStore((s) => s.deleteWorker)
 
+  const toast = useToast()
+
   const [selectedId, setSelectedId]   = useState<string | null>(null)
   const [activeTab, setActiveTab]     = useState("info")
   const [modalOpen, setModalOpen]     = useState(false)
@@ -209,9 +212,18 @@ export function ContractsList({ search = "" }: { search?: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editingId) await updateContract(editingId, { ...form, valueItems })
-    else await addContract({ ...form, valueItems, notes: [], workers: [], visits: [], createdAt: new Date().toISOString() })
-    setModalOpen(false)
+    try {
+      if (editingId) {
+        await updateContract(editingId, { ...form, valueItems })
+        toast.success("Contrato actualizado correctamente")
+      } else {
+        await addContract({ ...form, valueItems, notes: [], workers: [], visits: [], createdAt: new Date().toISOString() })
+        toast.success("Contrato creado correctamente")
+      }
+      setModalOpen(false)
+    } catch {
+      toast.error("Error al guardar el contrato")
+    }
   }
 
   const addValueItem = () => {
@@ -226,18 +238,35 @@ export function ContractsList({ search = "" }: { search?: string }) {
 
   const handleAddWorker = async (e: React.FormEvent) => {
     e.preventDefault(); if (!selectedId) return
-    await addWorker(selectedId, workerForm)
-    setWorkerModalOpen(false); setWorkerForm({ name: "", position: "", phone: "" })
+    try {
+      await addWorker(selectedId, workerForm)
+      toast.success(`Operario "${workerForm.name}" añadido`)
+      setWorkerModalOpen(false); setWorkerForm({ name: "", position: "", phone: "" })
+    } catch {
+      toast.error("Error al añadir el operario")
+    }
   }
 
   const handleDeleteContract = async () => {
     if (!selectedId) return
-    await deleteContract(selectedId); setSelectedId(null)
+    try {
+      await deleteContract(selectedId)
+      toast.success("Contrato eliminado")
+      setSelectedId(null)
+    } catch {
+      toast.error("Error al eliminar el contrato")
+    }
   }
 
   const handleDeleteWorker = async () => {
     if (!selectedId || !workerToDelete) return
-    await deleteWorker(selectedId, workerToDelete); setWorkerToDelete(null)
+    try {
+      await deleteWorker(selectedId, workerToDelete)
+      toast.success("Operario eliminado")
+      setWorkerToDelete(null)
+    } catch {
+      toast.error("Error al eliminar el operario")
+    }
   }
 
   const handleExportPDF = async () => {
@@ -245,8 +274,10 @@ export function ContractsList({ search = "" }: { search?: string }) {
     setPdfLoading(true)
     try {
       await generateContractPDF(selected)
+      toast.success("PDF descargado correctamente")
     } catch (e) {
       console.error("PDF error:", e)
+      toast.error("Error al generar el PDF")
     } finally {
       setPdfLoading(false)
     }

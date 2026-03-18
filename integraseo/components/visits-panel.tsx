@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { useToast } from "@/lib/toast"
 import type { Visit } from "@/lib/types"
 
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
@@ -16,6 +17,7 @@ function fmtDate(d:string) {
 
 export function VisitsPanel({ contractId }: { contractId:string }) {
   const { contracts, addVisit, deleteVisit } = useStore()
+  const toast = useToast()
   const contract  = contracts.find(c=>c.id===contractId)
   const visits:Visit[] = contract?.visits||[]
 
@@ -38,11 +40,14 @@ export function VisitsPanel({ contractId }: { contractId:string }) {
 
   const confirmVisit = async () => {
     const t = new Date(); const time = t.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})
-    await addVisit(contractId,{
-      date:selectedDate, time, createdAt:t.toISOString(), confirmedAt:t.toISOString(),
-      status:"confirmed", contractId, contractName:contract?.name||""
-    })
-    setConfirmOpen(false)
+    try {
+      await addVisit(contractId,{
+        date:selectedDate, time, createdAt:t.toISOString(), confirmedAt:t.toISOString(),
+        status:"confirmed", contractId, contractName:contract?.name||""
+      })
+      toast.success("Visita confirmada")
+      setConfirmOpen(false)
+    } catch { toast.error("Error al confirmar la visita") }
   }
 
   const confirmed = [...visits].filter(v=>v.status==="confirmed")

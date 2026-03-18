@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { useToast } from "@/lib/toast"
 import { Plus, Edit, Trash2, Download } from "lucide-react"
 import type { Supernumerario, Contract } from "@/lib/types"
 
@@ -85,6 +86,7 @@ function SupForm({ form, onChange, onSubmit, submitLabel, onCancel, showContrato
 export function SupernumerariosPanel({ search = "" }: { search?: string }) {
   const { contracts, getAllSupernumerarios, addSupernumerario, updateSupernumerario, deleteSupernumerario } = useStore()
 
+  const toast = useToast()
   const [entries, setEntries]                 = useState<SupEntry[]>([])
   const [loading, setLoading]                 = useState(true)
   const [addOpen, setAddOpen]                 = useState(false)
@@ -122,6 +124,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
       trabajo: form.trabajo,
       contratoId: form.contratoId,
     })
+    toast.success("Supernumerario registrado")
     setAddOpen(false)
     setForm(emptyForm)
     await loadData()
@@ -135,6 +138,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
       nombre: form.nombre,
       trabajo: form.trabajo,
     })
+    toast.success("Supernumerario actualizado")
     setEditOpen(false)
     setEditing(null)
     await loadData()
@@ -154,6 +158,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
   const confirmDelete = async () => {
     if (!deleting) return
     await deleteSupernumerario(deleting.contractDocId, deleting.index)
+    toast.success("Supernumerario eliminado")
     setDeleting(null)
     await loadData()
   }

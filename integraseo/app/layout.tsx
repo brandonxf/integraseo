@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar"
+import { ToastProvider } from "@/lib/toast"
+import { ToastContainer } from "@/components/toast-container"
 
 export const metadata: Metadata = {
   title: "Integraseo",
@@ -30,7 +32,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            {children}
+            <ToastContainer />
+          </ToastProvider>
+        </ThemeProvider>
         <ServiceWorkerRegistrar />
       </body>
     </html>

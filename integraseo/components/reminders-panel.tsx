@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit, Bell } from "lucide-react"
+import { useToast } from "@/lib/toast"
 
 export function RemindersPanel({ search = "" }: { search?: string }) {
   const contracts      = useStore((s) => s.contracts)
@@ -19,6 +20,7 @@ export function RemindersPanel({ search = "" }: { search?: string }) {
   const deleteReminder = useStore((s) => s.deleteReminder)
   const toggleReminder = useStore((s) => s.toggleReminder)
 
+  const toast = useToast()
   const [open, setOpen]             = useState(false)
   const [editingId, setEditingId]   = useState<string|null>(null)
   const [filter, setFilter]         = useState("all")
@@ -39,9 +41,11 @@ export function RemindersPanel({ search = "" }: { search?: string }) {
   const handleSubmit = async (e:React.FormEvent) => {
     e.preventDefault()
     const contractName = contracts.find(c=>c.id===form.contractId)?.name
-    if(editingId) await updateReminder(editingId, {...form, contractName})
-    else await addReminder({...form, contractName, completed:false})
-    setOpen(false)
+    try {
+      if(editingId) { await updateReminder(editingId, {...form, contractName}); toast.success("Recordatorio actualizado") }
+      else { await addReminder({...form, contractName, completed:false}); toast.success("Recordatorio creado") }
+      setOpen(false)
+    } catch { toast.error("Error al guardar el recordatorio") }
   }
 
   const sorted = [...reminders]

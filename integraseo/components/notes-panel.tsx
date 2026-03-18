@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Edit, Trash2, Plus, StickyNote } from "lucide-react"
+import { useToast } from "@/lib/toast"
 import type { ContractNote } from "@/lib/types"
 
 interface NotesPanelProps { contractId: string }
@@ -27,6 +28,7 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`
   const timeStr  = now.toTimeString().slice(0,5)
 
+  const toast = useToast()
   const [open, setOpen]           = useState(false)
   const [editingId, setEditingId] = useState<string|null>(null)
   const [form, setForm]           = useState({ date:todayStr, time:timeStr, content:"" })
@@ -36,9 +38,11 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
 
   const handleSubmit = async (e:React.FormEvent) => {
     e.preventDefault()
-    if(editingId) await updateNote(contractId,editingId,form)
-    else await addNote(contractId,form)
-    setOpen(false)
+    try {
+      if(editingId) { await updateNote(contractId,editingId,form); toast.success("Nota actualizada") }
+      else { await addNote(contractId,form); toast.success("Nota añadida") }
+      setOpen(false)
+    } catch { toast.error("Error al guardar la nota") }
   }
 
   return (

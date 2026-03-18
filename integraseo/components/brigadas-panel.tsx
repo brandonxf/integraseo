@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, RotateCcw, Leaf, Sparkles } from "lucide-react"
+import { useToast } from "@/lib/toast"
 import type { BrigadaServices } from "@/lib/types"
 
 interface BrigadaState { [id: string]: BrigadaServices }
@@ -29,7 +30,10 @@ export function BrigadasPanel({ search = "" }: { search?: string }) {
     const cur = brigadas[id]||{jardineria:false,aseo:false}
     const upd = {...cur,[svc]:val}
     setBrigadas(p=>({...p,[id]:upd}))
-    await updateBrigadaServices(id,upd)
+    try {
+      await updateBrigadaServices(id,upd)
+      toast.success(val ? `${svc === "jardineria" ? "Jardinería" : "Aseo"} marcado` : `${svc === "jardineria" ? "Jardinería" : "Aseo"} desmarcado`)
+    } catch { toast.error("Error al actualizar brigada") }
   }
 
   const handleReset = async () => {
@@ -38,6 +42,7 @@ export function BrigadasPanel({ search = "" }: { search?: string }) {
     const r:BrigadaState={}
     for (const c of contracts) r[c.id]={jardineria:false,aseo:false}
     setBrigadas(r); setResetting(false); setResetOpen(false)
+    toast.success("Verificaciones limpiadas")
   }
 
   const filtered = contracts.filter(c=>{
