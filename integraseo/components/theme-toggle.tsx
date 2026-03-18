@@ -8,16 +8,17 @@ export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-  if (!mounted) return <div className="w-8 h-8"/>
+  if (!mounted) return <div className="w-9 h-9" />
   return (
     <button
-      onClick={() => setTheme(resolvedTheme==="dark"?"light":"dark")}
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Cambiar tema"
-      className="w-8 h-8 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors backdrop-blur-sm"
+      className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center
+        hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
     >
-      {resolvedTheme==="dark"
-        ? <Sun className="h-4 w-4 text-white"/>
-        : <Moon className="h-4 w-4 text-white"/>
+      {resolvedTheme === "dark"
+        ? <Sun className="h-4 w-4" />
+        : <Moon className="h-4 w-4" />
       }
     </button>
   )

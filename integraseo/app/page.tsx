@@ -39,20 +39,14 @@ export default function Home() {
     <div className="flex h-screen flex-col bg-background overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 py-4
-        bg-gradient-to-r from-primary/90 to-primary
-        dark:from-primary/70 dark:to-primary/80
-        shadow-lg shadow-primary/20">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm">
-            <currentItem.Icon className="h-4 w-4 text-white" />
-          </div>
-          <div>
-            <h1 className="text-[15px] font-semibold text-white leading-none tracking-tight">
-              {currentItem.label}
-            </h1>
-            <p className="text-[11px] text-white/60 mt-0.5 leading-none">Integraseo</p>
-          </div>
+      <header className="shrink-0 flex items-center justify-between px-5 pt-5 pb-4 bg-background border-b border-border">
+        <div className="flex flex-col">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none mb-1.5">
+            Integraseo
+          </p>
+          <h1 className="text-[28px] font-extrabold text-foreground leading-none tracking-tight">
+            {currentItem.label}
+          </h1>
         </div>
         <ThemeToggle />
       </header>
