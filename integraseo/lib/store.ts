@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
   setDoc,
+  deleteField,
 } from "firebase/firestore"
 import { db } from "./firebase"
 import type {

@@ -122,9 +122,19 @@ export function SignaturePanel({ contractId }: SignaturePanelProps) {
 
   const handleDelete = async () => {
     try {
-      await updateContract(contractId, { signature: undefined, signedAt: undefined, signedBy: undefined })
+      // Use Firestore deleteField directly — updateContract passes undefined which Firestore rejects
+      const { doc, updateDoc, deleteField } = await import("firebase/firestore")
+      const { db } = await import("@/lib/firebase")
+      await updateDoc(doc(db, "contracts", contractId), {
+        signature: deleteField(),
+        signedAt:  deleteField(),
+        signedBy:  deleteField(),
+      })
+      // Update local store state
+      useStore.getState().loadAll()
       toast.success("Firma eliminada")
-    } catch {
+    } catch (e) {
+      console.error("Error eliminando firma:", e)
       toast.error("Error al eliminar la firma")
     }
   }
