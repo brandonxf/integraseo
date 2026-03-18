@@ -80,7 +80,7 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
       ))}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>{editingId?"Editar Nota":"Nueva Nota"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-1">
             <div className="grid grid-cols-2 gap-3">

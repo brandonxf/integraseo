@@ -125,7 +125,7 @@ export function VisitsPanel({ contractId }: { contractId:string }) {
       </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>Confirmar Visita</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">¿Confirmar visita para el <span className="font-semibold text-foreground capitalize">{selectedFmt}</span>?</p>
           <div className="flex gap-2 mt-2">

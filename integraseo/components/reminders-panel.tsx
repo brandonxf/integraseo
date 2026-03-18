@@ -130,7 +130,7 @@ export function RemindersPanel({ search = "" }: { search?: string }) {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>{editingId?"Editar Recordatorio":"Nuevo Recordatorio"}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-1">
             <div className="space-y-1.5">

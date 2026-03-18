@@ -117,7 +117,7 @@ export function BrigadasPanel({ search = "" }: { search?: string }) {
       </div>
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>Limpiar Verificaciones</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">¿Limpiar todas las verificaciones de jardinería y aseo? Esta acción no se puede deshacer.</p>
           <div className="flex gap-2 mt-2">

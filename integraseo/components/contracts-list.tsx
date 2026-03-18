@@ -263,7 +263,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
 
         {/* Add worker modal */}
         <Dialog open={workerModalOpen} onOpenChange={setWorkerModalOpen}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="">
             <DialogHeader><DialogTitle>Nuevo Operario</DialogTitle></DialogHeader>
             <form onSubmit={handleAddWorker} className="space-y-4 mt-1">
               {[{id:"name",label:"Nombre"},{id:"position",label:"Cargo"}].map(({id,label})=>(
@@ -286,7 +286,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
 
         {/* Edit modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Editar Contrato</DialogTitle></DialogHeader>
             <FormBody />
           </DialogContent>
@@ -351,7 +351,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
       </div>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nuevo Contrato</DialogTitle></DialogHeader>
           <FormBody />
         </DialogContent>

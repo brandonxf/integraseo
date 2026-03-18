@@ -246,7 +246,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
 
       {/* Modal: Nuevo */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>Nuevo Supernumerario</DialogTitle></DialogHeader>
           <SupForm
             form={form}
@@ -262,7 +262,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
 
       {/* Modal: Editar */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>Editar Supernumerario</DialogTitle></DialogHeader>
           <SupForm
             form={form}

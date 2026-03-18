@@ -140,7 +140,7 @@ export function CalendarPanel() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="">
           <DialogHeader><DialogTitle>Nuevo Evento</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-1">
             <div className="space-y-1.5">
