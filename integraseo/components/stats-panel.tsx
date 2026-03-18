@@ -7,6 +7,7 @@ import {
   CalendarCheck, Bell, TrendingUp, Leaf, Sparkles,
   AlertCircle, ChevronRight
 } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function localToday() {
@@ -117,15 +118,7 @@ export function StatsPanel() {
 
   if (contracts.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-20 text-center px-8">
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-5">
-          <TrendingUp className="h-10 w-10 text-primary/60" />
-        </div>
-        <p className="text-lg font-bold">Sin datos aún</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Crea contratos para ver las estadísticas de tu operación aquí.
-        </p>
-      </div>
+      <EmptyState illustration="contracts" title="Sin datos aún" description="Crea contratos para ver las estadísticas de tu operación aquí" />
     )
   }
 

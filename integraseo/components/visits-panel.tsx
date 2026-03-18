@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import { useToast } from "@/lib/toast"
 import type { Visit } from "@/lib/types"
 
@@ -98,10 +99,7 @@ export function VisitsPanel({ contractId }: { contractId:string }) {
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Historial de Visitas</p>
         {confirmed.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-            <span className="text-3xl mb-2">📋</span>
-            <p className="text-sm font-medium">Sin visitas confirmadas</p>
-          </div>
+          <EmptyState illustration="visits" title="Sin visitas" description="Toca un día en el calendario para confirmar una visita" />
         ) : (
           <div className="space-y-2">
             {confirmed.map(v=>(

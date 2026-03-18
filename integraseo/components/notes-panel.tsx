@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Edit, Trash2, Plus, StickyNote } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import { useToast } from "@/lib/toast"
 import type { ContractNote } from "@/lib/types"
 
@@ -54,13 +55,7 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
       </button>
 
       {notes.length===0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mb-3">
-            <StickyNote className="h-6 w-6 opacity-40"/>
-          </div>
-          <p className="text-sm font-medium">Sin notas</p>
-          <p className="text-xs mt-1">Añade una nota a este contrato</p>
-        </div>
+        <EmptyState illustration="notes" title="Sin notas" description="Registra observaciones importantes sobre este contrato" />
       ) : notes.map((note,i) => (
         <div key={note.id} className="p-3.5 rounded-xl bg-card border border-border group hover:border-primary/20 transition-colors">
           <div className="flex items-start justify-between mb-2">

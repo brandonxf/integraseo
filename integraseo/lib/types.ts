@@ -38,6 +38,7 @@ export interface Contract {
   notes: ContractNote[]
   workers: ContractWorker[]
   visits: Visit[]
+  color?: string
   createdAt?: string
 }
 

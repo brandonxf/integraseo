@@ -12,12 +12,27 @@ import { NotesPanel } from "@/components/notes-panel"
 import { VisitsPanel } from "@/components/visits-panel"
 import {
   Edit, Trash2, FileText, ChevronLeft, Plus, X,
-  AlertCircle, MapPin, Briefcase, CheckCircle2, Clock, XCircle, FileDown
+  AlertCircle, MapPin, Briefcase, CheckCircle2, Clock, XCircle, FileDown,
+  LayoutList, LayoutGrid
 } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import type { ValueItem } from "@/lib/types"
 import { generateContractPDF } from "@/lib/generate-pdf"
 import { useToast } from "@/lib/toast"
 import { HistoryPanel } from "@/components/history-panel"
+
+const CONTRACT_COLORS = [
+  { label: "Violeta",  value: "bg-violet-500",  hex: "#8b5cf6" },
+  { label: "Cielo",    value: "bg-sky-500",      hex: "#0ea5e9" },
+  { label: "Verde",    value: "bg-emerald-500",  hex: "#10b981" },
+  { label: "Naranja",  value: "bg-orange-500",   hex: "#f97316" },
+  { label: "Rosa",     value: "bg-pink-500",     hex: "#ec4899" },
+  { label: "Índigo",   value: "bg-indigo-500",   hex: "#6366f1" },
+  { label: "Rojo",     value: "bg-red-500",      hex: "#ef4444" },
+  { label: "Ámbar",    value: "bg-amber-500",    hex: "#f59e0b" },
+  { label: "Teal",     value: "bg-teal-500",     hex: "#14b8a6" },
+  { label: "Lima",     value: "bg-lime-500",     hex: "#84cc16" },
+]
 
 // ── Status pill ────────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: string }) {
@@ -179,6 +194,8 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const [workerModalOpen, setWorkerModalOpen] = useState(false)
   const [deleteContractOpen, setDeleteContractOpen] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [compact, setCompact]         = useState(false)
+  const [colorPickerFor, setColorPickerFor] = useState<string | null>(null)
   const [deleteWorkerOpen, setDeleteWorkerOpen]     = useState(false)
   const [workerToDelete, setWorkerToDelete]         = useState<string | null>(null)
 
@@ -377,6 +394,28 @@ export function ContractsList({ search = "" }: { search?: string }) {
                 }
               </button>
 
+              {/* Color picker */}
+              <div className="p-3 rounded-xl bg-card border border-border">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide mb-2.5">Color del contrato</p>
+                <div className="flex flex-wrap gap-2">
+                  {CONTRACT_COLORS.map((c) => {
+                    const isSelected = (selected.color || "bg-violet-500") === c.value
+                    return (
+                      <button key={c.value}
+                        onClick={async () => {
+                          await updateContract(selected.id, { color: c.value })
+                          toast.success(`Color: ${c.label}`)
+                        }}
+                        className={`w-7 h-7 rounded-full ${c.value} transition-all ${
+                          isSelected ? "ring-2 ring-offset-2 ring-primary scale-110" : "hover:scale-110 opacity-70 hover:opacity-100"
+                        }`}
+                        title={c.label}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+
               <button
                 onClick={() => setDeleteContractOpen(true)}
                 className="w-full py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-semibold
@@ -466,62 +505,128 @@ export function ContractsList({ search = "" }: { search?: string }) {
   }
 
   // ── List view ────────────────────────────────────────────────────────────────
+  const activeContracts    = filtered.filter(c => c.status === "active")
+  const pendingContracts   = filtered.filter(c => c.status === "pending")
+  const completedContracts = filtered.filter(c => c.status === "completed")
+
+  const FALLBACK_COLORS = ["bg-violet-500","bg-sky-500","bg-emerald-500","bg-orange-500","bg-pink-500","bg-indigo-500"]
+
+  const ContractCard = ({ contract, index }: { contract: typeof contracts[0]; index: number }) => {
+    const initials  = contract.name.substring(0, 2).toUpperCase()
+    const lastNote  = contract.notes?.length ? contract.notes[contract.notes.length - 1].content : contract.client
+    const color     = contract.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]
+
+    if (compact) {
+      return (
+        <button onClick={() => setSelectedId(contract.id)}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-card border border-border
+            hover:border-primary/30 hover:bg-accent/30 active:scale-[0.99] transition-all text-left">
+          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
+            {initials}
+          </div>
+          <span className="text-sm font-medium flex-1 truncate">{contract.name}</span>
+          <StatusPill status={contract.status} />
+        </button>
+      )
+    }
+
+    return (
+      <button key={contract.id} onClick={() => setSelectedId(contract.id)}
+        className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-card border border-border
+          hover:border-primary/30 hover:shadow-md hover:shadow-primary/5
+          active:scale-[0.99] transition-all text-left group"
+      >
+        <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm`}>
+          {initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-semibold truncate block">{contract.name}</span>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{lastNote}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <StatusPill status={contract.status} />
+          {contract.workers?.length > 0 && (
+            <span className="text-[10px] text-muted-foreground">
+              {contract.workers.length} operario{contract.workers.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      </button>
+    )
+  }
+
+  const SectionHeader = ({ label, count, color }: { label: string; count: number; color: string }) => (
+    <div className="flex items-center gap-2 px-1 pt-2 pb-1">
+      <div className={`w-2 h-2 rounded-full ${color}`} />
+      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-xs font-bold text-muted-foreground">· {count}</span>
+    </div>
+  )
+
   return (
     <div className="flex flex-col h-full">
-      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between">
+      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           {filtered.length} contrato{filtered.length !== 1 ? "s" : ""}
         </p>
-        <button
-          onClick={openAdd}
-          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-            flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all"
-        >
-          <Plus className="h-4 w-4" /> Nuevo
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Compact/Expanded toggle */}
+          <button onClick={() => setCompact(c => !c)}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+              compact ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+            title={compact ? "Vista expandida" : "Vista compacta"}
+          >
+            {compact ? <LayoutList className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={openAdd}
+            className="h-8 px-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+              flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all"
+          >
+            <Plus className="h-4 w-4" /> Nuevo
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <FileText className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-            <p className="font-semibold text-foreground">{search ? "Sin coincidencias" : "Sin contratos"}</p>
-            <p className="text-sm text-muted-foreground mt-1">{search ? "Intenta otra búsqueda" : "Añade tu primer contrato"}</p>
-          </div>
-        ) : (
-          filtered.map((contract, i) => {
-            const initials = contract.name.substring(0, 2).toUpperCase()
-            const lastNote = contract.notes?.length ? contract.notes[contract.notes.length - 1].content : contract.client
-            const COLORS   = ["bg-violet-500","bg-sky-500","bg-emerald-500","bg-orange-500","bg-pink-500","bg-indigo-500"]
-            const color    = COLORS[i % COLORS.length]
-            return (
-              <button key={contract.id} onClick={() => setSelectedId(contract.id)}
-                className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-card border border-border
-                  hover:border-primary/30 hover:shadow-md hover:shadow-primary/5
-                  active:scale-[0.99] transition-all text-left group"
-              >
-                <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm`}>
-                  {initials}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-sm font-semibold truncate">{contract.name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">{lastNote}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <StatusPill status={contract.status} />
-                  {contract.workers?.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      {contract.workers.length} operario{contract.workers.length !== 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
+          <EmptyState
+            illustration="contracts"
+            title={search ? "Sin coincidencias" : "Sin contratos"}
+            description={search ? "Intenta con otra búsqueda o limpia el filtro" : "Crea tu primer contrato para empezar a gestionar tu operación"}
+            action={!search ? (
+              <button onClick={openAdd}
+                className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+                  flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 transition-all">
+                <Plus className="h-4 w-4" /> Crear contrato
               </button>
-            )
-          })
+            ) : undefined}
+          />
+        ) : (
+          <div className={compact ? "space-y-1" : "space-y-2.5"}>
+            {/* Activos */}
+            {activeContracts.length > 0 && (
+              <>
+                <SectionHeader label="Activos" count={activeContracts.length} color="bg-emerald-500" />
+                {activeContracts.map((c, i) => <ContractCard key={c.id} contract={c} index={i} />)}
+              </>
+            )}
+            {/* Pendientes */}
+            {pendingContracts.length > 0 && (
+              <>
+                <SectionHeader label="Pendientes" count={pendingContracts.length} color="bg-amber-500" />
+                {pendingContracts.map((c, i) => <ContractCard key={c.id} contract={c} index={i} />)}
+              </>
+            )}
+            {/* Completados */}
+            {completedContracts.length > 0 && (
+              <>
+                <SectionHeader label="Completados" count={completedContracts.length} color="bg-sky-500" />
+                {completedContracts.map((c, i) => <ContractCard key={c.id} contract={c} index={i} />)}
+              </>
+            )}
+          </div>
         )}
       </div>
 

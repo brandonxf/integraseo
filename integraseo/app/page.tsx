@@ -10,6 +10,7 @@ import { SupernumerariosPanel } from "@/components/supernumerarios-panel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { StatsPanel } from "@/components/stats-panel"
 import { useStore } from "@/lib/store"
+import { ContractListSkeleton, StatsSkeleton } from "@/components/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 
 type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios" | "stats"
@@ -37,8 +38,10 @@ export default function Home() {
   const showSearch = ["contracts","brigadas","supernumerarios","reminders"].includes(currentView)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  const reminders = useStore((s) => s.reminders)
   const loadAll = useStore((s) => s.loadAll)
   const loading = useStore((s) => s.loading)
+  const pendingCount = reminders.filter(r => !r.completed).length
   useEffect(() => { loadAll() }, [loadAll])
 
   const navigate = (id: View) => {
@@ -90,19 +93,29 @@ export default function Home() {
       {/* ── Content ────────────────────────────────────── */}
       <main className="flex-1 overflow-hidden relative">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <p className="text-sm text-muted-foreground">Cargando datos...</p>
+          <div className="h-full overflow-hidden">
+            {(currentView === "contracts" || currentView === "brigadas" || currentView === "supernumerarios" || currentView === "reminders") && <ContractListSkeleton />}
+            {currentView === "stats" && <StatsSkeleton />}
+            {(currentView === "calendar") && <ContractListSkeleton />}
           </div>
         ) : (
-          <div key={currentView} className="h-full animate-fade-up">
-            {currentView === "stats"           && <StatsPanel />}
-            {currentView === "contracts"       && <ContractsList search={headerSearch} />}
-            {currentView === "calendar"        && <CalendarPanel />}
-            {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}
-            {currentView === "brigadas"        && <BrigadasPanel search={headerSearch} />}
-            {currentView === "supernumerarios" && <SupernumerariosPanel search={headerSearch} />}
-          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{    opacity: 0, x: -24 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="h-full"
+            >
+              {currentView === "stats"           && <StatsPanel />}
+              {currentView === "contracts"       && <ContractsList search={headerSearch} />}
+              {currentView === "calendar"        && <CalendarPanel />}
+              {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}
+              {currentView === "brigadas"        && <BrigadasPanel search={headerSearch} />}
+              {currentView === "supernumerarios" && <SupernumerariosPanel search={headerSearch} />}
+            </motion.div>
+          </AnimatePresence>
         )}
       </main>
 
@@ -208,6 +221,14 @@ export default function Home() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
               ].join(" ")}
             >
+              {/* Badge: pending reminders */}
+              {pendingCount > 0 && !menuOpen && !isMenuView && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full
+                  bg-red-500 text-white text-[9px] font-bold flex items-center justify-center
+                  shadow-sm z-10">
+                  {pendingCount > 9 ? "9+" : pendingCount}
+                </span>
+              )}
               {/* Active dot indicator when a menu section is selected */}
               {isMenuView && !menuOpen && (
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary-foreground" />

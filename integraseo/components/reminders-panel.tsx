@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit, Bell } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import { useToast } from "@/lib/toast"
 
 export function RemindersPanel({ search = "" }: { search?: string }) {
@@ -113,13 +114,7 @@ export function RemindersPanel({ search = "" }: { search?: string }) {
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {sorted.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <Bell className="h-8 w-8 text-muted-foreground/40"/>
-            </div>
-            <p className="font-semibold">Sin recordatorios</p>
-            <p className="text-sm text-muted-foreground mt-1">Crea uno para no olvidar tareas</p>
-          </div>
+          <EmptyState illustration="reminders" title="Sin recordatorios" description="Crea recordatorios para no olvidar tareas importantes" />
         ) : (
           <>
             {pending.map(r=><ReminderCard key={r.id} r={r}/>)}
