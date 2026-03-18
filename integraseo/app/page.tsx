@@ -106,7 +106,7 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               exit={{    opacity: 0, x: -24 }}
               transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="h-full"
+              className="h-full overflow-hidden"
             >
               {currentView === "stats"           && <StatsPanel />}
               {currentView === "contracts"       && <ContractsList search={headerSearch} />}
