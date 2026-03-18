@@ -39,7 +39,7 @@ export default function Home() {
   const currentItem = NAV_ITEMS.find((n) => n.id === currentView)!
 
   return (
-    <div className="flex h-screen flex-col bg-background overflow-hidden">
+    <div className="flex flex-col bg-background overflow-hidden" style={{height:"100dvh"}}>
 
       {/* ── Header ─────────────────────────────────────── */}
       <header className="shrink-0 flex items-center justify-between gap-3 px-4 py-3.5
