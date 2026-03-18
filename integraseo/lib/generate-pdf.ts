@@ -52,12 +52,12 @@ export async function generateContractPDF(contract: Contract) {
   const rect = (x:number, yy:number, w:number, h:number, style:"F"|"FD"|"D"="F") =>
     doc.rect(x, yy, w, h, style)
 
-  function sectionTitle(title: string, icon?: string) {
+  function sectionTitle(title: string) {
     y += 6
     fill(...LIGHT); rect(margin, y, W - margin*2, 8, "F")
     fill(...NAVY);  rect(margin, y, 3, 8, "F")
     fw("bold"); fs(9); col(...NAVY)
-    text((icon ? icon + "  " : "") + title.toUpperCase(), margin + 6, y + 5.5)
+    text(title.toUpperCase(), margin + 6, y + 5.5)
     y += 12
   }
 
@@ -119,7 +119,7 @@ export async function generateContractPDF(contract: Contract) {
   draw(...BORDER); line(margin, y, W-margin, y); y += 8
 
   // ── Información general ──
-  sectionTitle("Información General", "📋")
+  sectionTitle("Información General")
 
   infoRow("Cliente",    contract.client, false)
   infoRow("Ubicación",  contract.location || "No especificada", true)
@@ -130,7 +130,7 @@ export async function generateContractPDF(contract: Contract) {
 
   // ── Valor Agregado ──
   if (contract.valueItems?.length > 0) {
-    sectionTitle("Valor Agregado", "💼")
+    sectionTitle("Valor Agregado")
     contract.valueItems.forEach((item, i) => {
       fill(i%2===0 ? 249 : 255, i%2===0 ? 250 : 255, 255)
       rect(margin, y-1, W-margin*2, 7, "F")
@@ -145,7 +145,7 @@ export async function generateContractPDF(contract: Contract) {
   // ── Operarios ──
   if (contract.workers?.length > 0) {
     checkPage(20 + contract.workers.length * 10)
-    sectionTitle("Operarios", "👷")
+    sectionTitle("Operarios")
 
     // Table header
     fill(...NAVY); rect(margin, y, W-margin*2, 8, "F")
@@ -175,7 +175,7 @@ export async function generateContractPDF(contract: Contract) {
       (a,b) => new Date(b.confirmedAt).getTime() - new Date(a.confirmedAt).getTime()
     )
     checkPage(20 + Math.min(sortedVisits.length, 8) * 9)
-    sectionTitle("Visitas Confirmadas", "📅")
+    sectionTitle("Visitas Confirmadas")
 
     fill(...NAVY); rect(margin, y, W-margin*2, 8, "F")
     fw("bold"); fs(8); col(...WHITE)
@@ -204,7 +204,7 @@ export async function generateContractPDF(contract: Contract) {
       (a,b) => new Date(b.date+"T"+b.time).getTime() - new Date(a.date+"T"+a.time).getTime()
     )
     checkPage(25)
-    sectionTitle("Notas", "📝")
+    sectionTitle("Notas")
 
     sortedNotes.forEach((note, i) => {
       const lines = doc.splitTextToSize(note.content, W - margin*2 - 12)
