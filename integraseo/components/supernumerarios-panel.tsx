@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ConfirmDialog } from "@/components/confirm-dialog"
+import { EmptyState } from "@/components/empty-state"
 import { useToast } from "@/lib/toast"
 import { Plus, Edit, Trash2, Download } from "lucide-react"
 import type { Supernumerario, Contract } from "@/lib/types"
@@ -219,10 +220,11 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
         {loading ? (
           <div className="flex items-center justify-center h-40 text-muted-foreground">Cargando...</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-            <p className="font-medium">{search ? "No hay coincidencias" : "No hay supernumerarios"}</p>
-            <p className="text-sm">{search ? "Prueba otra búsqueda" : "Añade el primer supernumerario"}</p>
-          </div>
+          <EmptyState
+            illustration="workers"
+            title={search ? "Sin coincidencias" : "Sin supernumerarios"}
+            description={search ? "Intenta otra búsqueda" : "Registra el primer supernumerario con el botón Nuevo"}
+          />
         ) : (
           <div className="space-y-3">
             {filtered.map((entry, i) => (

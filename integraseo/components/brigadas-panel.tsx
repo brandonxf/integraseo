@@ -5,6 +5,7 @@ import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, RotateCcw, Leaf, Sparkles } from "lucide-react"
+import { EmptyState } from "@/components/empty-state"
 import { useToast } from "@/lib/toast"
 import type { BrigadaServices } from "@/lib/types"
 
@@ -79,12 +80,11 @@ export function BrigadasPanel({ search = "" }: { search?: string }) {
         {loading ? (
           <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Cargando brigadas...</div>
         ) : filtered.length===0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
-              <span className="text-2xl">🌿</span>
-            </div>
-            <p className="text-sm font-medium">{search?"Sin coincidencias":"Sin contratos"}</p>
-          </div>
+          <EmptyState
+            illustration="workers"
+            title={search ? "Sin coincidencias" : "Sin contratos"}
+            description={search ? "Intenta otra búsqueda" : "Los contratos con brigadas aparecerán aquí"}
+          />
         ) : filtered.map(c=>{
           const s = brigadas[c.id]||{jardineria:false,aseo:false}
           const anyChecked = s.jardineria||s.aseo
