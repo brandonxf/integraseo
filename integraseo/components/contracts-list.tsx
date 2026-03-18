@@ -12,9 +12,10 @@ import { NotesPanel } from "@/components/notes-panel"
 import { VisitsPanel } from "@/components/visits-panel"
 import {
   Edit, Trash2, FileText, ChevronLeft, Plus, X,
-  AlertCircle, MapPin, Briefcase, CheckCircle2, Clock, XCircle
+  AlertCircle, MapPin, Briefcase, CheckCircle2, Clock, XCircle, FileDown
 } from "lucide-react"
 import type { ValueItem } from "@/lib/types"
+import { generateContractPDF } from "@/lib/generate-pdf"
 
 // ── Status pill ────────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: string }) {
@@ -173,6 +174,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const [valueError, setValueError]   = useState(false)
   const [workerModalOpen, setWorkerModalOpen] = useState(false)
   const [deleteContractOpen, setDeleteContractOpen] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
   const [deleteWorkerOpen, setDeleteWorkerOpen]     = useState(false)
   const [workerToDelete, setWorkerToDelete]         = useState<string | null>(null)
 
@@ -237,6 +239,18 @@ export function ContractsList({ search = "" }: { search?: string }) {
     await deleteWorker(selectedId, workerToDelete); setWorkerToDelete(null)
   }
 
+  const handleExportPDF = async () => {
+    if (!selected) return
+    setPdfLoading(true)
+    try {
+      await generateContractPDF(selected)
+    } catch (e) {
+      console.error("PDF error:", e)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   const filtered = contracts.filter((c) => {
     const q = search.toLowerCase()
     return !q || c.name.toLowerCase().includes(q) || c.client.toLowerCase().includes(q)
@@ -259,6 +273,17 @@ export function ContractsList({ search = "" }: { search?: string }) {
               <p className="text-xs text-muted-foreground truncate">{selected.client}</p>
             </div>
             <StatusPill status={selected.status} />
+            <button
+              onClick={handleExportPDF}
+              disabled={pdfLoading}
+              className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors disabled:opacity-50"
+              title="Exportar PDF"
+            >
+              {pdfLoading
+                ? <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                : <FileDown className="h-3.5 w-3.5 text-primary" />
+              }
+            </button>
             <button
               onClick={() => openEdit(selected.id)}
               className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors"
