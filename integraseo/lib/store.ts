@@ -124,6 +124,10 @@ export const useStore = create<AppState>((set, get) => ({
         workers: d.data().workers || [],
         visits: d.data().visits || [],
         createdAt: d.data().createdAt || "",
+        color: d.data().color || undefined,
+        signature: d.data().signature || undefined,
+        signedAt: d.data().signedAt || undefined,
+        signedBy: d.data().signedBy || undefined,
       }))
 
       const events: CalendarEvent[] = eventsSnap.docs.map((d) => ({
