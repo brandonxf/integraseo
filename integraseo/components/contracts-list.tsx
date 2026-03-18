@@ -274,17 +274,6 @@ export function ContractsList({ search = "" }: { search?: string }) {
             </div>
             <StatusPill status={selected.status} />
             <button
-              onClick={handleExportPDF}
-              disabled={pdfLoading}
-              className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors disabled:opacity-50"
-              title="Exportar PDF"
-            >
-              {pdfLoading
-                ? <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                : <FileDown className="h-3.5 w-3.5 text-primary" />
-              }
-            </button>
-            <button
               onClick={() => openEdit(selected.id)}
               className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors"
             >
@@ -343,8 +332,21 @@ export function ContractsList({ search = "" }: { search?: string }) {
               )}
 
               <button
+                onClick={handleExportPDF}
+                disabled={pdfLoading}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+                  flex items-center justify-center gap-2 shadow-sm shadow-primary/30
+                  hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-60"
+              >
+                {pdfLoading
+                  ? <><div className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" /> Generando PDF...</>
+                  : <><FileDown className="h-4 w-4" /> Descargar Reporte PDF</>
+                }
+              </button>
+
+              <button
                 onClick={() => setDeleteContractOpen(true)}
-                className="w-full mt-2 py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-semibold
+                className="w-full py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-semibold
                   flex items-center justify-center gap-2 hover:bg-destructive/5 transition-colors"
               >
                 <Trash2 className="h-4 w-4" /> Eliminar Contrato
