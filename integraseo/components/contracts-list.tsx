@@ -146,28 +146,60 @@ interface WorkerFormProps {
   onCancel: () => void
 }
 
+const POSITION_OPTIONS = [
+  "Aseador",
+  "Piscinero",
+  "Salvavidas",
+  "Todero",
+  "Conserje",
+  "Jardinero",
+]
+
 function WorkerForm({ form, onChange, onSubmit, onCancel }: WorkerFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4 mt-1">
-      {([
-        { id: "name",     label: "Nombre", type: "text", required: true  },
-        { id: "position", label: "Cargo",  type: "text", required: true  },
-        { id: "phone",    label: "Teléfono", type: "tel", required: false },
-      ] as const).map(({ id, label, type, required }) => (
-        <div key={id} className="space-y-1.5">
-          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</Label>
-          <Input
-            type={type}
-            value={form[id]}
-            onChange={(e) => onChange(id, e.target.value)}
-            required={required}
-            className="h-10"
-          />
-        </div>
-      ))}
+      {/* Nombre */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</Label>
+        <Input
+          value={form.name}
+          onChange={(e) => onChange("name", e.target.value)}
+          required
+          className="h-10"
+          placeholder="Nombre completo"
+        />
+      </div>
+
+      {/* Cargo — dropdown */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cargo</Label>
+        <Select value={form.position} onValueChange={(v) => onChange("position", v)}>
+          <SelectTrigger className="h-10 w-full">
+            <SelectValue placeholder="Seleccionar cargo" />
+          </SelectTrigger>
+          <SelectContent>
+            {POSITION_OPTIONS.map((pos) => (
+              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Teléfono */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Teléfono</Label>
+        <Input
+          type="tel"
+          value={form.phone}
+          onChange={(e) => onChange("phone", e.target.value)}
+          className="h-10"
+          placeholder="Opcional"
+        />
+      </div>
+
       <div className="flex gap-2 pt-1">
         <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>Cancelar</Button>
-        <Button type="submit" className="flex-1">Guardar</Button>
+        <Button type="submit" className="flex-1" disabled={!form.position}>Guardar</Button>
       </div>
     </form>
   )
