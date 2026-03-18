@@ -9,13 +9,12 @@ import type { BrigadaServices } from "@/lib/types"
 
 interface BrigadaState { [id: string]: BrigadaServices }
 
-export function BrigadasPanel() {
+export function BrigadasPanel({ search = "" }: { search?: string }) {
   const { contracts, getBrigadaServices, updateBrigadaServices } = useStore()
   const [brigadas, setBrigadas]         = useState<BrigadaState>({})
   const [loading, setLoading]           = useState(true)
   const [resetOpen, setResetOpen]       = useState(false)
   const [resetting, setResetting]       = useState(false)
-  const [search, setSearch]             = useState("")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -51,17 +50,10 @@ export function BrigadasPanel() {
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="shrink-0 px-4 pt-4 pb-3 space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
-            <input type="search" placeholder="Buscar contrato..." value={search}
-              onChange={e=>setSearch(e.target.value)}
-              className="w-full h-10 pl-9 pr-3 text-sm border border-border rounded-xl bg-card
-                focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors"/>
-          </div>
+        <div className="flex justify-end">
           <button onClick={()=>setResetOpen(true)} title="Limpiar verificaciones"
-            className="h-10 w-10 rounded-xl border border-border bg-card flex items-center justify-center
-              hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+            className="h-9 w-9 rounded-xl border border-border bg-card flex items-center justify-center
+              hover:bg-muted text-muted-foreground hover:text-foreground transition-colors ml-auto">
             <RotateCcw className="h-4 w-4"/>
           </button>
         </div>

@@ -82,12 +82,11 @@ function SupForm({ form, onChange, onSubmit, submitLabel, onCancel, showContrato
 }
 
 // ─── Panel principal ──────────────────────────────────────────────────────────
-export function SupernumerariosPanel() {
+export function SupernumerariosPanel({ search = "" }: { search?: string }) {
   const { contracts, getAllSupernumerarios, addSupernumerario, updateSupernumerario, deleteSupernumerario } = useStore()
 
   const [entries, setEntries]                 = useState<SupEntry[]>([])
   const [loading, setLoading]                 = useState(true)
-  const [search, setSearch]                   = useState("")
   const [addOpen, setAddOpen]                 = useState(false)
   const [editOpen, setEditOpen]               = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -208,13 +207,7 @@ export function SupernumerariosPanel() {
             </Button>
           </div>
         </div>
-        <input
-          type="search"
-          placeholder="Buscar supernumerario..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background"
-        />
+
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">

@@ -30,7 +30,7 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-export function ContractsList() {
+export function ContractsList({ search = "" }: { search?: string }) {
   const contracts      = useStore((s) => s.contracts)
   const addContract    = useStore((s) => s.addContract)
   const updateContract = useStore((s) => s.updateContract)
@@ -38,7 +38,6 @@ export function ContractsList() {
   const addWorker      = useStore((s) => s.addWorker)
   const deleteWorker   = useStore((s) => s.deleteWorker)
 
-  const [search, setSearch]       = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("info")
   const [modalOpen, setModalOpen] = useState(false)
@@ -299,25 +298,16 @@ export function ContractsList() {
   /* ── List view ── */
   return (
     <div className="flex flex-col h-full">
-      {/* Search + action bar */}
-      <div className="shrink-0 px-4 pt-4 pb-3 space-y-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <input type="search" placeholder="Buscar contrato..." value={search}
-              onChange={(e)=>setSearch(e.target.value)}
-              className="w-full h-10 pl-9 pr-3 text-sm border border-border rounded-xl bg-card
-                focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-colors" />
-          </div>
-          <button onClick={openAdd}
-            className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-              flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all">
-            <Plus className="h-4 w-4" /> Nuevo
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground px-0.5">
-          {filtered.length} contrato{filtered.length!==1?"s":""}{search?" encontrado":search?"s encontrados":"s en total"}
+      {/* Action bar */}
+      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} contrato{filtered.length!==1?"s":""}
         </p>
+        <button onClick={openAdd}
+          className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+            flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all">
+          <Plus className="h-4 w-4" /> Nuevo
+        </button>
       </div>
 
       {/* List */}

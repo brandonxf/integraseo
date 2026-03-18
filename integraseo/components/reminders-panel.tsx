@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2, Edit, Bell } from "lucide-react"
 
-export function RemindersPanel() {
+export function RemindersPanel({ search = "" }: { search?: string }) {
   const contracts      = useStore((s) => s.contracts)
   const reminders      = useStore((s) => s.reminders)
   const addReminder    = useStore((s) => s.addReminder)
@@ -45,7 +45,7 @@ export function RemindersPanel() {
   }
 
   const sorted = [...reminders]
-    .filter(r=>filter==="all"||r.contractId===filter)
+    .filter(r=>(filter==="all"||r.contractId===filter) && (!search||r.title.toLowerCase().includes(search.toLowerCase())||r.description?.toLowerCase().includes(search.toLowerCase())))
     .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))
 
   const pending   = sorted.filter(r=>!r.completed)

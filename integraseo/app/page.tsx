@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileText, Calendar, Bell, Users, UserPlus } from "lucide-react"
+import { FileText, Calendar, Bell, Users, UserPlus, Search } from "lucide-react"
 import { ContractsList } from "@/components/contracts-list"
 import { CalendarPanel } from "@/components/calendar-panel"
 import { RemindersPanel } from "@/components/reminders-panel"
@@ -23,6 +23,8 @@ const NAV_ITEMS: { id: View; label: string; short: string; Icon: React.FC<{ clas
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("contracts")
   const [prevView, setPrevView] = useState<View>("contracts")
+  const [headerSearch, setHeaderSearch] = useState("")
+  const showSearch = ["contracts","brigadas","supernumerarios","reminders"].includes(currentView)
   const loadAll = useStore((s) => s.loadAll)
   const loading = useStore((s) => s.loading)
 
@@ -31,6 +33,7 @@ export default function Home() {
   const navigate = (id: View) => {
     setPrevView(currentView)
     setCurrentView(id)
+    setHeaderSearch("")
   }
 
   const currentItem = NAV_ITEMS.find((n) => n.id === currentView)!
@@ -39,16 +42,28 @@ export default function Home() {
     <div className="flex h-screen flex-col bg-background overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 pt-5 pb-4 bg-background border-b border-border">
-        <div className="flex flex-col">
-          <p className="text-[10px] font-bold text-primary uppercase tracking-widest leading-none mb-1.5">
-            Integraseo
-          </p>
-          <h1 className="text-[28px] font-extrabold text-foreground leading-none tracking-tight">
-            {currentItem.label}
-          </h1>
+      <header className="shrink-0 flex items-center justify-between gap-3 px-4 py-3.5
+        bg-[#07105e] dark:bg-[#070d3a]">
+        <h1 className="text-[22px] font-bold text-white leading-none tracking-tight shrink-0">
+          {currentItem.label}
+        </h1>
+        <div className="flex items-center gap-2 flex-1 justify-end max-w-[220px]">
+          {showSearch && (
+            <div className="relative flex-1">
+              <input
+                type="search"
+                placeholder={`Buscar ${currentItem.label.toLowerCase()}`}
+                value={headerSearch}
+                onChange={(e) => setHeaderSearch(e.target.value)}
+                className="w-full h-9 pl-3 pr-9 text-sm rounded-lg
+                  bg-white/10 border border-white/20 text-white placeholder:text-white/50
+                  focus:outline-none focus:bg-white/15 focus:border-white/40 transition-colors"
+              />
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50 pointer-events-none" />
+            </div>
+          )}
+          <ThemeToggle />
         </div>
-        <ThemeToggle />
       </header>
 
       {/* ── Content ────────────────────────────────────── */}
@@ -60,11 +75,11 @@ export default function Home() {
           </div>
         ) : (
           <div key={currentView} className="h-full animate-fade-up">
-            {currentView === "contracts"       && <ContractsList />}
+            {currentView === "contracts"       && <ContractsList search={headerSearch} />}
             {currentView === "calendar"        && <CalendarPanel />}
-            {currentView === "reminders"       && <RemindersPanel />}
-            {currentView === "brigadas"        && <BrigadasPanel />}
-            {currentView === "supernumerarios" && <SupernumerariosPanel />}
+            {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}
+            {currentView === "brigadas"        && <BrigadasPanel search={headerSearch} />}
+            {currentView === "supernumerarios" && <SupernumerariosPanel search={headerSearch} />}
           </div>
         )}
       </main>
