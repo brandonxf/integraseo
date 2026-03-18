@@ -16,6 +16,7 @@ export function BrigadasPanel({ search = "" }: { search?: string }) {
   const [loading, setLoading]           = useState(true)
   const [resetOpen, setResetOpen]       = useState(false)
   const [resetting, setResetting]       = useState(false)
+  const toast = useToast()
 
   const load = useCallback(async () => {
     setLoading(true)
