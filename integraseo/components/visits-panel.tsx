@@ -34,7 +34,7 @@ export function VisitsPanel({ contractId }: { contractId:string }) {
 
   const ds = (d:number) => `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`
   const hasVisit = (d:number) => visits.some(v=>v.date===ds(d))
-  const isToday  = (d:number) => ds(d)===now.toISOString().split("T")[0]
+  const isToday  = (d:number) => ds(d)===`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`
 
   const confirmVisit = async () => {
     const t = new Date(); const time = t.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})

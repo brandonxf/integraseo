@@ -24,7 +24,7 @@ export function NotesPanel({ contractId }: NotesPanelProps) {
   )
 
   const now = new Date()
-  const todayStr = now.toISOString().split("T")[0]
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`
   const timeStr  = now.toTimeString().slice(0,5)
 
   const [open, setOpen]           = useState(false)

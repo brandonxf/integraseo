@@ -27,7 +27,7 @@ export function RemindersPanel({ search = "" }: { search?: string }) {
 
   const openAdd = () => {
     setEditingId(null)
-    setForm({ title:"", date:now.toISOString().split("T")[0], time:now.toTimeString().slice(0,5), description:"", contractId:"" })
+    setForm({ title:"", date:`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`, time:now.toTimeString().slice(0,5), description:"", contractId:"" })
     setOpen(true)
   }
   const openEdit = (id:string) => {

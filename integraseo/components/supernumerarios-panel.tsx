@@ -93,7 +93,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
   const [editing, setEditing]                 = useState<SupEntry | null>(null)
   const [deleting, setDeleting]               = useState<SupEntry | null>(null)
 
-  const today = new Date().toISOString().split("T")[0]
+  const today = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}-${String(new Date().getDate()).padStart(2,"0")}`
   const emptyForm = { fecha: today, nombre: "", trabajo: "", contratoId: "" }
   const [form, setForm] = useState(emptyForm)
 
