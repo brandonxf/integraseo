@@ -93,7 +93,7 @@ export default function Home() {
       {/* ── Content ────────────────────────────────────── */}
       <main className="flex-1 overflow-hidden relative">
         {loading ? (
-          <div className="h-full overflow-hidden">
+          <div className="h-full">
             {(currentView === "contracts" || currentView === "brigadas" || currentView === "supernumerarios" || currentView === "reminders") && <ContractListSkeleton />}
             {currentView === "stats" && <StatsSkeleton />}
             {(currentView === "calendar") && <ContractListSkeleton />}
@@ -106,7 +106,7 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               exit={{    opacity: 0, x: -24 }}
               transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="h-full overflow-hidden"
+              className="h-full overflow-y-auto"
             >
               {currentView === "stats"           && <StatsPanel />}
               {currentView === "contracts"       && <ContractsList search={headerSearch} />}
