@@ -40,6 +40,9 @@ export interface Contract {
   visits: Visit[]
   color?: string
   createdAt?: string
+  signature?: string   // base64 PNG
+  signedAt?: string    // ISO timestamp
+  signedBy?: string    // nombre del firmante
 }
 
 export interface CalendarEvent {

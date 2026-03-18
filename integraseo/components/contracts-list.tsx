@@ -20,6 +20,7 @@ import type { ValueItem } from "@/lib/types"
 import { generateContractPDF } from "@/lib/generate-pdf"
 import { useToast } from "@/lib/toast"
 import { HistoryPanel } from "@/components/history-panel"
+import { SignaturePanel } from "@/components/signature-panel"
 
 const CONTRACT_COLORS = [
   { label: "Violeta",  value: "bg-violet-500",  hex: "#8b5cf6" },
@@ -367,8 +368,9 @@ export function ContractsList({ search = "" }: { search?: string }) {
               { id: "info",    label: "Info"      },
               { id: "notes",   label: "Notas"     },
               { id: "workers", label: "Operarios" },
-              { id: "visits",   label: "Visitas"   },
-              { id: "history",  label: "Historial" },
+              { id: "visits",    label: "Visitas"   },
+              { id: "history",   label: "Historial" },
+              { id: "signature", label: "Firma"     },
             ].map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex-1 py-2 text-xs font-semibold transition-colors ${
@@ -497,7 +499,8 @@ export function ContractsList({ search = "" }: { search?: string }) {
           )}
 
           {activeTab === "visits"  && <VisitsPanel contractId={selected.id} />}
-          {activeTab === "history" && <HistoryPanel contractId={selected.id} />}
+          {activeTab === "history"   && <HistoryPanel contractId={selected.id} />}
+          {activeTab === "signature" && <SignaturePanel contractId={selected.id} />}
         </div>
 
         <ConfirmDialog open={deleteContractOpen} onOpenChange={setDeleteContractOpen}

@@ -170,7 +170,9 @@ export const useStore = create<AppState>((set, get) => ({
     if (data.name   && prev?.name   !== data.name)   details.push(`Nombre actualizado`)
     if (data.client && prev?.client !== data.client) details.push(`Cliente actualizado`)
     if (data.location !== undefined && prev?.location !== data.location) details.push(`Ubicación actualizada`)
-    await get().addHistory({ contractId: id, action: "Contrato editado", detail: details.length ? details.join(" · ") : "Campos actualizados", category: "contract", timestamp: new Date().toISOString() })
+    if (data.signature && !prev?.signature) details.push(`Firma digital añadida`)
+    if (data.signature === undefined && prev?.signature) details.push(`Firma eliminada`)
+    await get().addHistory({ contractId: id, action: details.some(d=>d.includes("Firma")) ? "Firma actualizada" : "Contrato editado", detail: details.length ? details.join(" · ") : "Campos actualizados", category: "contract", timestamp: new Date().toISOString() })
   },
 
   deleteContract: async (id) => {

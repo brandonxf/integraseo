@@ -232,6 +232,44 @@ export async function generateContractPDF(contract: Contract) {
     })
   }
 
+  // ── Firma digital ──
+  if (contract.signature) {
+    checkPage(50)
+    sectionTitle("Firma Digital")
+
+    const sigX = margin
+    const sigW = W - margin * 2
+    const sigH = 40
+
+    // White background box
+    fill(255,255,255); rect(sigX, y, sigW, sigH, "F")
+    draw(...BORDER); rect(sigX, y, sigW, sigH, "D")
+
+    try {
+      doc.addImage(contract.signature, "PNG", sigX + 2, y + 2, sigW - 4, sigH - 4)
+    } catch {
+      fw("normal"); fs(8); col(...GRAY)
+      text("Firma registrada digitalmente", margin + sigW/2, y + sigH/2, { align: "center" })
+    }
+    y += sigH + 4
+
+    if (contract.signedBy) {
+      fw("bold"); fs(8); col(...DARK)
+      text(contract.signedBy, margin, y + 4)
+      y += 8
+    }
+    if (contract.signedAt) {
+      fw("normal"); fs(7.5); col(...GRAY)
+      text(`Firmado el ${fmtDateTime(contract.signedAt)}`, margin, y + 4)
+      y += 8
+    }
+    // Signature line
+    draw(...BORDER); line(margin, y, margin + 70, y)
+    fw("normal"); fs(7); col(...GRAY)
+    text("Firma del cliente", margin, y + 4)
+    y += 10
+  }
+
   // ══════════════════════════════════════════════════════════════════════════
   // FOOTER on every page
   // ══════════════════════════════════════════════════════════════════════════
