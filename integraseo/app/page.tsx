@@ -1,18 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileText, Calendar, Bell, Users, UserPlus, Search } from "lucide-react"
+import { FileText, Calendar, Bell, Users, UserPlus, Search, BarChart2 } from "lucide-react"
 import { ContractsList } from "@/components/contracts-list"
 import { CalendarPanel } from "@/components/calendar-panel"
 import { RemindersPanel } from "@/components/reminders-panel"
 import { BrigadasPanel } from "@/components/brigadas-panel"
 import { SupernumerariosPanel } from "@/components/supernumerarios-panel"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { StatsPanel } from "@/components/stats-panel"
 import { useStore } from "@/lib/store"
 
-type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios"
+type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios" | "stats"
 
 const NAV_ITEMS: { id: View; label: string; short: string; Icon: React.FC<{ className?: string }> }[] = [
+  { id: "stats",            label: "Dashboard",       short: "Stats",      Icon: BarChart2 },
   { id: "contracts",        label: "Contratos",       short: "Contratos",  Icon: FileText  },
   { id: "calendar",         label: "Calendario",      short: "Calendario", Icon: Calendar  },
   { id: "reminders",        label: "Recordatorios",   short: "Recordat.",  Icon: Bell      },
@@ -24,7 +26,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<View>("contracts")
   const [prevView, setPrevView] = useState<View>("contracts")
   const [headerSearch, setHeaderSearch] = useState("")
-  const showSearch = ["contracts","brigadas","supernumerarios","reminders"].includes(currentView)
+  const showSearch = ["contracts","brigadas","supernumerarios","reminders"].includes(currentView) && currentView !== "stats"
   const loadAll = useStore((s) => s.loadAll)
   const loading = useStore((s) => s.loading)
 
@@ -75,6 +77,7 @@ export default function Home() {
           </div>
         ) : (
           <div key={currentView} className="h-full animate-fade-up">
+            {currentView === "stats"           && <StatsPanel />}
             {currentView === "contracts"       && <ContractsList search={headerSearch} />}
             {currentView === "calendar"        && <CalendarPanel />}
             {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}
