@@ -1,33 +1,45 @@
 "use client"
 
+import { AnimatePresence, motion } from "framer-motion"
 import { useToast, type Toast } from "@/lib/toast"
-import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
+import { CheckCircle2, AlertTriangle, Info, XOctagon, X } from "lucide-react"
 
 const CONFIG = {
   success: {
-    Icon:      CheckCircle2,
-    iconBg:    "bg-emerald-500",
-    dot:       "bg-emerald-400",
-    label:     "text-emerald-400",
+    Icon:       CheckCircle2,
+    iconColor:  "text-emerald-500",
+    border:     "border-emerald-200 dark:border-emerald-800",
+    bar:        "bg-emerald-500",
+    label:      "text-emerald-600 dark:text-emerald-400",
   },
   error: {
-    Icon:      XCircle,
-    iconBg:    "bg-red-500",
-    dot:       "bg-red-400",
-    label:     "text-red-400",
+    Icon:       XOctagon,
+    iconColor:  "text-red-500",
+    border:     "border-red-200 dark:border-red-800",
+    bar:        "bg-red-500",
+    label:      "text-red-600 dark:text-red-400",
   },
   warning: {
-    Icon:      AlertTriangle,
-    iconBg:    "bg-amber-500",
-    dot:       "bg-amber-400",
-    label:     "text-amber-400",
+    Icon:       AlertTriangle,
+    iconColor:  "text-amber-500",
+    border:     "border-amber-200 dark:border-amber-800",
+    bar:        "bg-amber-500",
+    label:      "text-amber-600 dark:text-amber-400",
   },
   info: {
-    Icon:      Info,
-    iconBg:    "bg-sky-500",
-    dot:       "bg-sky-400",
-    label:     "text-sky-400",
+    Icon:       Info,
+    iconColor:  "text-sky-500",
+    border:     "border-sky-200 dark:border-sky-800",
+    bar:        "bg-sky-500",
+    label:      "text-sky-600 dark:text-sky-400",
   },
+}
+
+const TYPE_LABEL = {
+  success: "Éxito",
+  error:   "Error",
+  warning: "Aviso",
+  info:    "Info",
 }
 
 function ToastItem({ toast }: { toast: Toast }) {
@@ -35,61 +47,69 @@ function ToastItem({ toast }: { toast: Toast }) {
   const c = CONFIG[toast.type]
 
   return (
-    <div
-      onClick={() => dismiss(toast.id)}
-      className="group relative flex items-center gap-3 w-full cursor-pointer
-        px-3.5 py-3 rounded-2xl
-        bg-zinc-900 dark:bg-zinc-800
-        border border-white/[0.08]
-        shadow-[0_8px_32px_rgba(0,0,0,0.45)]
-        overflow-hidden select-none"
-      style={{ animation: "toastIn 0.2s cubic-bezier(0.34,1.56,0.64,1) forwards" }}
+    <motion.div
+      layout
+      role="alert"
+      initial={{ opacity: 0, y: 40, scale: 0.85 }}
+      animate={{ opacity: 1, y: 0,  scale: 1    }}
+      exit={{    opacity: 0, y: 16, scale: 0.92  }}
+      transition={{ type: "spring", stiffness: 280, damping: 22 }}
+      className={`
+        relative w-full overflow-hidden rounded-xl
+        bg-background border shadow-lg shadow-black/8
+        flex items-start gap-3 p-4
+        ${c.border}
+      `}
     >
-      {/* Icon pill */}
-      <div className={`shrink-0 w-7 h-7 rounded-lg ${c.iconBg} flex items-center justify-center shadow-sm`}>
-        <c.Icon className="h-4 w-4 text-white" strokeWidth={2.5} />
+      {/* Colored left accent bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${c.bar} rounded-l-xl`} />
+
+      {/* Icon */}
+      <div className="shrink-0 mt-0.5 pl-1">
+        <c.Icon className={`h-5 w-5 ${c.iconColor}`} strokeWidth={2} />
       </div>
 
-      {/* Message */}
-      <p className="flex-1 text-[13px] font-medium text-white/90 leading-snug tracking-tight">
-        {toast.message}
-      </p>
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${c.label}`}>
+          {TYPE_LABEL[toast.type]}
+        </p>
+        <p className="text-sm font-medium text-foreground leading-snug">
+          {toast.message}
+        </p>
+      </div>
 
-      {/* Dismiss dot */}
-      <div className={`shrink-0 w-1.5 h-1.5 rounded-full ${c.dot} opacity-70 group-hover:opacity-100 transition-opacity`} />
+      {/* Close button */}
+      <button
+        onClick={() => dismiss(toast.id)}
+        className="shrink-0 mt-0.5 p-1 rounded-lg text-muted-foreground
+          hover:text-foreground hover:bg-muted transition-colors"
+        aria-label="Cerrar"
+      >
+        <X className="h-4 w-4" />
+      </button>
 
-      {/* Progress track */}
+      {/* Progress bar */}
       <div
-        className="absolute bottom-0 left-0 h-[2px] rounded-full opacity-30"
-        style={{
-          background: `var(--progress-color)`,
-          animation: "toastProgress 3.2s linear forwards",
-          width: "100%",
-        }}
+        className={`absolute bottom-0 left-0 h-[2px] ${c.bar} opacity-25`}
+        style={{ animation: "toastProgress 3.2s linear forwards", width: "100%" }}
       />
-      {/* Inline CSS var for progress color per type */}
-      <style>{`
-        [data-toast-type="${toast.type}"] { --progress-color: ${
-          toast.type === "success" ? "#34d399" :
-          toast.type === "error"   ? "#f87171" :
-          toast.type === "warning" ? "#fbbf24" : "#38bdf8"
-        }; }
-      `}</style>
-    </div>
+    </motion.div>
   )
 }
 
 export function ToastContainer() {
   const { toasts } = useToast()
-  if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-[90px] left-0 right-0 z-[100] flex flex-col-reverse gap-2 px-5 pointer-events-none">
-      {toasts.map((t) => (
-        <div key={t.id} className="pointer-events-auto" data-toast-type={t.type}>
-          <ToastItem toast={t} />
-        </div>
-      ))}
+    <div className="fixed bottom-[90px] left-0 right-0 z-[100] flex flex-col-reverse gap-2 px-4 pointer-events-none">
+      <AnimatePresence mode="popLayout">
+        {toasts.map((t) => (
+          <div key={t.id} className="pointer-events-auto">
+            <ToastItem toast={t} />
+          </div>
+        ))}
+      </AnimatePresence>
     </div>
   )
 }

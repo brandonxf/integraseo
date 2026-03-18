@@ -124,12 +124,7 @@
   }
 }
 
-/* Toast animations */
-@keyframes toastIn {
-  0%   { opacity: 0; transform: translateY(16px) scale(0.92); }
-  60%  { opacity: 1; transform: translateY(-3px) scale(1.01); }
-  100% { opacity: 1; transform: translateY(0)    scale(1); }
-}
+/* Toast animations — framer-motion handles enter/exit */
 @keyframes toastProgress {
   from { width: 100%; }
   to   { width: 0%; }
