@@ -74,3 +74,12 @@ export interface Supernumerario {
   createdAt?: string
   updatedAt?: string
 }
+
+export interface HistoryEntry {
+  id: string
+  contractId: string
+  action: string        // e.g. "Contrato creado", "Estado cambiado"
+  detail: string        // e.g. "De 'Pendiente' a 'Activo'"
+  category: "contract" | "note" | "worker" | "visit"
+  timestamp: string     // ISO string
+}

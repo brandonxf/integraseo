@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import type { ValueItem } from "@/lib/types"
 import { generateContractPDF } from "@/lib/generate-pdf"
+import { HistoryPanel } from "@/components/history-panel"
 
 // ── Status pill ────────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: string }) {
@@ -286,7 +287,8 @@ export function ContractsList({ search = "" }: { search?: string }) {
               { id: "info",    label: "Info"      },
               { id: "notes",   label: "Notas"     },
               { id: "workers", label: "Operarios" },
-              { id: "visits",  label: "Visitas"   },
+              { id: "visits",   label: "Visitas"   },
+              { id: "history",  label: "Historial" },
             ].map((t) => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex-1 py-2 text-xs font-semibold transition-colors ${
@@ -392,7 +394,8 @@ export function ContractsList({ search = "" }: { search?: string }) {
             </div>
           )}
 
-          {activeTab === "visits" && <VisitsPanel contractId={selected.id} />}
+          {activeTab === "visits"  && <VisitsPanel contractId={selected.id} />}
+          {activeTab === "history" && <HistoryPanel contractId={selected.id} />}
         </div>
 
         <ConfirmDialog open={deleteContractOpen} onOpenChange={setDeleteContractOpen}

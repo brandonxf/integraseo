@@ -20,6 +20,7 @@ import type {
   ContractWorker,
   Visit,
   ValueItem,
+  HistoryEntry,
 } from "./types"
 
 interface AppState {
@@ -27,6 +28,10 @@ interface AppState {
   events: CalendarEvent[]
   reminders: Reminder[]
   loading: boolean
+
+  // History
+  addHistory: (entry: Omit<HistoryEntry, "id">) => Promise<void>
+  getHistory: (contractId: string) => Promise<HistoryEntry[]>
 
   // Load all data
   loadAll: () => Promise<void>
@@ -77,6 +82,27 @@ export const useStore = create<AppState>((set, get) => ({
   events: [],
   reminders: [],
   loading: false,
+
+  addHistory: async (entry) => {
+    try {
+      const histRef = collection(db, "history")
+      await addDoc(histRef, { ...entry, id: Date.now().toString() })
+    } catch (e) {
+      console.warn("History write failed:", e)
+    }
+  },
+
+  getHistory: async (contractId) => {
+    try {
+      const snap = await getDocs(collection(db, "history"))
+      return snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as HistoryEntry))
+        .filter(h => h.contractId === contractId)
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    } catch {
+      return []
+    }
+  },
 
   loadAll: async () => {
     set({ loading: true })
@@ -130,16 +156,26 @@ export const useStore = create<AppState>((set, get) => ({
   addContract: async (data) => {
     const docRef = await addDoc(collection(db, "contracts"), data)
     set((state) => ({ contracts: [...state.contracts, { id: docRef.id, ...data }] }))
+    await get().addHistory({ contractId: docRef.id, action: "Contrato creado", detail: `"${data.name}" para ${data.client}`, category: "contract", timestamp: new Date().toISOString() })
   },
 
   updateContract: async (id, data) => {
+    const prev = get().contracts.find(c => c.id === id)
     await updateDoc(doc(db, "contracts", id), data as Record<string, unknown>)
     set((state) => ({
       contracts: state.contracts.map((c) => (c.id === id ? { ...c, ...data } : c)),
     }))
+    const details: string[] = []
+    if (data.status && prev?.status !== data.status) details.push(`Estado: "${prev?.status ?? ""}" → "${data.status}"`)
+    if (data.name   && prev?.name   !== data.name)   details.push(`Nombre actualizado`)
+    if (data.client && prev?.client !== data.client) details.push(`Cliente actualizado`)
+    if (data.location !== undefined && prev?.location !== data.location) details.push(`Ubicación actualizada`)
+    await get().addHistory({ contractId: id, action: "Contrato editado", detail: details.length ? details.join(" · ") : "Campos actualizados", category: "contract", timestamp: new Date().toISOString() })
   },
 
   deleteContract: async (id) => {
+    const c = get().contracts.find(c => c.id === id)
+    await get().addHistory({ contractId: id, action: "Contrato eliminado", detail: c ? `"${c.name}"` : id, category: "contract", timestamp: new Date().toISOString() })
     await deleteDoc(doc(db, "contracts", id))
     set((state) => ({ contracts: state.contracts.filter((c) => c.id !== id) }))
   },
@@ -158,6 +194,7 @@ export const useStore = create<AppState>((set, get) => ({
         c.id === contractId ? { ...c, notes: updatedNotes } : c
       ),
     }))
+    await get().addHistory({ contractId, action: "Nota añadida", detail: note.content.slice(0, 80) + (note.content.length > 80 ? "…" : ""), category: "note", timestamp: new Date().toISOString() })
   },
 
   updateNote: async (contractId, noteId, data) => {
@@ -182,6 +219,7 @@ export const useStore = create<AppState>((set, get) => ({
         c.id === contractId ? { ...c, notes: updatedNotes } : c
       ),
     }))
+    await get().addHistory({ contractId, action: "Nota eliminada", detail: "Nota borrada del contrato", category: "note", timestamp: new Date().toISOString() })
   },
 
   // Workers
@@ -196,6 +234,7 @@ export const useStore = create<AppState>((set, get) => ({
         c.id === contractId ? { ...c, workers: updatedWorkers } : c
       ),
     }))
+    await get().addHistory({ contractId, action: "Operario añadido", detail: `${worker.name} — ${worker.position}`, category: "worker", timestamp: new Date().toISOString() })
   },
 
   deleteWorker: async (contractId, workerId) => {
@@ -208,6 +247,7 @@ export const useStore = create<AppState>((set, get) => ({
         c.id === contractId ? { ...c, workers: updatedWorkers } : c
       ),
     }))
+    await get().addHistory({ contractId, action: "Operario eliminado", detail: "Operario removido del contrato", category: "worker", timestamp: new Date().toISOString() })
   },
 
   // Visits
@@ -222,6 +262,7 @@ export const useStore = create<AppState>((set, get) => ({
         c.id === contractId ? { ...c, visits: updatedVisits } : c
       ),
     }))
+    await get().addHistory({ contractId, action: "Visita confirmada", detail: `Fecha: ${visit.date} a las ${visit.time}`, category: "visit", timestamp: new Date().toISOString() })
   },
 
   deleteVisit: async (contractId, visitId) => {
