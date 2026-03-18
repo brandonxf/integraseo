@@ -2,128 +2,86 @@
 
 import { useState } from "react"
 import { useStore } from "@/lib/store"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/confirm-dialog"
-import { Edit, Trash2, FileText, ChevronLeft, Plus, X, AlertCircle } from "lucide-react"
 import { NotesPanel } from "@/components/notes-panel"
 import { VisitsPanel } from "@/components/visits-panel"
+import {
+  Edit, Trash2, FileText, ChevronLeft, Plus, X,
+  AlertCircle, Search, MapPin, Briefcase, CheckCircle2, Clock, XCircle
+} from "lucide-react"
 import type { ValueItem } from "@/lib/types"
 
-function getStatusColor(status: string) {
-  switch (status) {
-    case "active":    return "bg-green-500"
-    case "completed": return "bg-blue-500"
-    case "pending":   return "bg-yellow-500"
-    default:          return "bg-gray-500"
+function StatusPill({ status }: { status: string }) {
+  const map: Record<string, { label: string; cls: string; Icon: React.FC<{className?:string}> }> = {
+    active:    { label: "Activo",     cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400", Icon: CheckCircle2 },
+    pending:   { label: "Pendiente",  cls: "bg-amber-100  text-amber-700  dark:bg-amber-900/40  dark:text-amber-400",  Icon: Clock },
+    completed: { label: "Completado", cls: "bg-sky-100    text-sky-700    dark:bg-sky-900/40    dark:text-sky-400",    Icon: XCircle },
   }
-}
-
-function getStatusLabel(status: string) {
-  switch (status) {
-    case "active":    return "Activo"
-    case "completed": return "Completado"
-    case "pending":   return "Pendiente"
-    default:          return status
-  }
+  const s = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground", Icon: Clock }
+  return (
+    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>
+      <s.Icon className="h-3 w-3" />{s.label}
+    </span>
+  )
 }
 
 export function ContractsList() {
-  const contracts     = useStore((s) => s.contracts)
-  const addContract   = useStore((s) => s.addContract)
+  const contracts      = useStore((s) => s.contracts)
+  const addContract    = useStore((s) => s.addContract)
   const updateContract = useStore((s) => s.updateContract)
   const deleteContract = useStore((s) => s.deleteContract)
-  const addWorker     = useStore((s) => s.addWorker)
-  const deleteWorker  = useStore((s) => s.deleteWorker)
+  const addWorker      = useStore((s) => s.addWorker)
+  const deleteWorker   = useStore((s) => s.deleteWorker)
 
-  const [search, setSearch]               = useState("")
-  const [selectedId, setSelectedId]       = useState<string | null>(null)
-  const [activeTab, setActiveTab]         = useState("info")
-  const [modalOpen, setModalOpen]         = useState(false)
-  const [editingId, setEditingId]         = useState<string | null>(null)
-  const [valueItems, setValueItems]       = useState<ValueItem[]>([])
-  const [valueInput, setValueInput]       = useState("")
-  const [valueError, setValueError]       = useState(false)
+  const [search, setSearch]       = useState("")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("info")
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [valueItems, setValueItems] = useState<ValueItem[]>([])
+  const [valueInput, setValueInput] = useState("")
+  const [valueError, setValueError] = useState(false)
   const [workerModalOpen, setWorkerModalOpen] = useState(false)
-  const [workerForm, setWorkerForm]       = useState({ name: "", position: "", phone: "" })
-
-  // Confirm dialogs
+  const [workerForm, setWorkerForm] = useState({ name: "", position: "", phone: "" })
   const [deleteContractOpen, setDeleteContractOpen] = useState(false)
   const [deleteWorkerOpen, setDeleteWorkerOpen]     = useState(false)
   const [workerToDelete, setWorkerToDelete]         = useState<string | null>(null)
-
-  const [form, setForm] = useState({
-    name: "", client: "", location: "",
-    status: "active" as "active" | "completed" | "pending",
-  })
+  const [form, setForm] = useState({ name: "", client: "", location: "", status: "active" as "active"|"completed"|"pending" })
 
   const selected = contracts.find((c) => c.id === selectedId)
 
   const openAdd = () => {
-    setEditingId(null)
-    setForm({ name: "", client: "", location: "", status: "active" })
-    setValueItems([])
-    setValueInput("")
-    setValueError(false)
-    setModalOpen(true)
+    setEditingId(null); setForm({ name:"", client:"", location:"", status:"active" })
+    setValueItems([]); setValueInput(""); setValueError(false); setModalOpen(true)
   }
-
   const openEdit = (id: string) => {
-    const c = contracts.find((c) => c.id === id)
-    if (!c) return
-    setEditingId(id)
-    setForm({ name: c.name, client: c.client, location: c.location || "", status: c.status })
-    setValueItems(c.valueItems || [])
-    setValueInput("")
-    setValueError(false)
-    setModalOpen(true)
+    const c = contracts.find((c) => c.id === id); if (!c) return
+    setEditingId(id); setForm({ name:c.name, client:c.client, location:c.location||"", status:c.status })
+    setValueItems(c.valueItems||[]); setValueInput(""); setValueError(false); setModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (editingId) {
-      await updateContract(editingId, { ...form, valueItems })
-    } else {
-      await addContract({ ...form, valueItems, notes: [], workers: [], visits: [], createdAt: new Date().toISOString() })
-    }
+    if (editingId) await updateContract(editingId, { ...form, valueItems })
+    else await addContract({ ...form, valueItems, notes:[], workers:[], visits:[], createdAt: new Date().toISOString() })
     setModalOpen(false)
   }
-
   const addValueItem = () => {
     const match = valueInput.trim().match(/^(\d+)\s+(.+)$/)
-    if (match) {
-      setValueItems([...valueItems, { quantity: parseInt(match[1]), type: match[2] }])
-      setValueInput("")
-      setValueError(false)
-    } else {
-      setValueError(true)
-    }
+    if (match) { setValueItems([...valueItems, { quantity:parseInt(match[1]), type:match[2] }]); setValueInput(""); setValueError(false) }
+    else setValueError(true)
   }
-
   const handleAddWorker = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedId) return
+    e.preventDefault(); if (!selectedId) return
     await addWorker(selectedId, workerForm)
-    setWorkerModalOpen(false)
-    setWorkerForm({ name: "", position: "", phone: "" })
+    setWorkerModalOpen(false); setWorkerForm({ name:"", position:"", phone:"" })
   }
-
-  const handleDeleteContract = async () => {
-    if (!selectedId) return
-    await deleteContract(selectedId)
-    setSelectedId(null)
-  }
-
-  const handleDeleteWorker = async () => {
-    if (!selectedId || !workerToDelete) return
-    await deleteWorker(selectedId, workerToDelete)
-    setWorkerToDelete(null)
-  }
+  const handleDeleteContract = async () => { if (!selectedId) return; await deleteContract(selectedId); setSelectedId(null) }
+  const handleDeleteWorker   = async () => { if (!selectedId||!workerToDelete) return; await deleteWorker(selectedId, workerToDelete); setWorkerToDelete(null) }
 
   const filtered = contracts.filter((c) => {
     const q = search.toLowerCase()
@@ -131,44 +89,42 @@ export function ContractsList() {
   })
 
   const FormBody = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2"><Label>Nombre del Contrato</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-      <div className="space-y-2"><Label>Cliente</Label><Input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} required /></div>
-      <div className="space-y-2"><Label>Ubicación</Label><Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
-      <div className="space-y-2">
-        <Label>Valor Agregado</Label>
-        <div className="space-y-1">
+    <form onSubmit={handleSubmit} className="space-y-4 mt-1">
+      {[{ id:"name", label:"Nombre del Contrato", val:form.name, key:"name" as const },
+        { id:"client", label:"Cliente", val:form.client, key:"client" as const },
+        { id:"location", label:"Ubicación", val:form.location, key:"location" as const }
+      ].map(({ id, label, val, key }) => (
+        <div key={id} className="space-y-1.5">
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</Label>
+          <Input value={val} onChange={(e) => setForm({ ...form, [key]: e.target.value }) } required={key !== "location"} className="h-10" />
+        </div>
+      ))}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Valor Agregado</Label>
+        <div className="space-y-1.5">
           {valueItems.map((item, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm bg-muted/50 px-2 py-1 rounded-md">
-              <span className="flex-1">{item.quantity} {item.type}</span>
-              <button type="button" onClick={() => setValueItems(valueItems.filter((_, j) => j !== i))}>
-                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+            <div key={i} className="flex items-center gap-2 text-sm bg-accent/60 px-3 py-1.5 rounded-lg">
+              <span className="flex-1 font-medium">{item.quantity} {item.type}</span>
+              <button type="button" onClick={() => setValueItems(valueItems.filter((_,j)=>j!==i))}>
+                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive transition-colors" />
               </button>
             </div>
           ))}
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <Input
-              value={valueInput}
-              onChange={(e) => { setValueInput(e.target.value); setValueError(false) }}
-              placeholder="ej: 1 jardinero"
-              className={valueError ? "border-destructive focus-visible:ring-destructive/50" : ""}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addValueItem() } }}
-            />
-            {valueError && (
-              <p className="flex items-center gap-1 text-xs text-destructive mt-1">
-                <AlertCircle className="h-3 w-3" /> Formato correcto: "1 jardinero"
-              </p>
-            )}
+            <Input value={valueInput} onChange={(e)=>{setValueInput(e.target.value);setValueError(false)}}
+              placeholder="ej: 1 jardinero" className={`h-10 ${valueError?"border-destructive":""}`}
+              onKeyDown={(e)=>{if(e.key==="Enter"){e.preventDefault();addValueItem()}}} />
+            {valueError && <p className="flex items-center gap-1 text-xs text-destructive mt-1"><AlertCircle className="h-3 w-3"/>Formato: "1 jardinero"</p>}
           </div>
-          <Button type="button" variant="outline" onClick={addValueItem}>+</Button>
+          <Button type="button" variant="outline" onClick={addValueItem} className="h-10 px-3">+</Button>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Estado</Label>
-        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "active" | "completed" | "pending" })}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Estado</Label>
+        <Select value={form.status} onValueChange={(v)=>setForm({...form,status:v as "active"|"completed"|"pending"})}>
+          <SelectTrigger className="h-10 w-full"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="active">Activo</SelectItem>
             <SelectItem value="pending">Pendiente</SelectItem>
@@ -176,156 +132,160 @@ export function ContractsList() {
           </SelectContent>
         </Select>
       </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-        <Button type="submit">Guardar</Button>
+      <div className="flex gap-2 pt-2">
+        <Button type="button" variant="outline" className="flex-1" onClick={()=>setModalOpen(false)}>Cancelar</Button>
+        <Button type="submit" className="flex-1">Guardar</Button>
       </div>
     </form>
   )
 
-  // ── Detail view ──────────────────────────────────────────────────────────
+  /* ── Detail view ── */
   if (selected) {
+    const TABS = [
+      { id:"info", label:"Info" },
+      { id:"notes", label:"Notas" },
+      { id:"workers", label:"Operarios" },
+      { id:"visits", label:"Visitas" },
+    ]
     return (
       <div className="flex flex-col h-full">
-        <div className="p-4 border-b border-border flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => { setSelectedId(null); setActiveTab("info") }}>
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h2 className="font-semibold">{selected.name}</h2>
-            <p className="text-sm text-muted-foreground">{selected.client}</p>
-          </div>
-          <Button variant="ghost" size="icon" onClick={() => openEdit(selected.id)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-border overflow-x-auto">
-          {[
-            { id: "info",    label: "Información" },
-            { id: "notes",   label: "Notas"       },
-            { id: "workers", label: "Operarios"   },
-            { id: "visits",  label: "Visitas"     },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? "border-b-2 border-primary text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
+        {/* Detail header */}
+        <div className="shrink-0 px-4 pt-4 pb-0">
+          <div className="flex items-center gap-3 mb-4">
+            <button onClick={()=>{setSelectedId(null);setActiveTab("info")}}
+              className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          ))}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-base leading-tight truncate">{selected.name}</h2>
+              <p className="text-xs text-muted-foreground truncate">{selected.client}</p>
+            </div>
+            <StatusPill status={selected.status} />
+            <button onClick={()=>openEdit(selected.id)}
+              className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+              <Edit className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {/* Tab bar */}
+          <div className="flex border-b border-border">
+            {TABS.map((t) => (
+              <button key={t.id} onClick={()=>setActiveTab(t.id)}
+                className={`flex-1 py-2 text-xs font-semibold transition-colors ${
+                  activeTab===t.id
+                    ? "border-b-2 border-primary text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
-          {activeTab === "info" && (
-            <div className="space-y-3">
-              <div className="flex justify-between"><span className="text-sm font-medium text-muted-foreground">Cliente</span><span className="text-sm">{selected.client}</span></div>
-              <div className="flex justify-between"><span className="text-sm font-medium text-muted-foreground">Ubicación</span><span className="text-sm">{selected.location || "No especificada"}</span></div>
-              <div className="flex justify-between items-start">
-                <span className="text-sm font-medium text-muted-foreground">Valor Agregado</span>
-                <div className="text-right text-sm">
-                  {selected.valueItems?.length
-                    ? selected.valueItems.map((v, i) => <p key={i}>{v.quantity} {v.type}</p>)
-                    : <span>No especificado</span>}
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {activeTab==="info" && (
+            <div className="space-y-3 animate-fade-up">
+              {/* Info cards */}
+              {[
+                { icon: Briefcase, label:"Cliente", value:selected.client },
+                { icon: MapPin,    label:"Ubicación", value:selected.location||"No especificada" },
+              ].map(({ icon:Icon, label, value }) => (
+                <div key={label} className="flex items-start gap-3 p-3 rounded-xl bg-card border border-border">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+                    <p className="text-sm font-medium mt-0.5">{value}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-muted-foreground">Estado</span>
-                <Badge className={getStatusColor(selected.status)}>{getStatusLabel(selected.status)}</Badge>
-              </div>
-              <div className="pt-4 border-t border-border">
-                <Button
-                  variant="destructive" size="sm" className="w-full"
-                  onClick={() => setDeleteContractOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" /> Eliminar Contrato
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "notes"   && <NotesPanel contractId={selected.id} />}
-
-          {activeTab === "workers" && (
-            <div className="space-y-3">
-              <Button size="sm" className="w-full" onClick={() => setWorkerModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Añadir Operario
-              </Button>
-              {!selected.workers?.length ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="font-medium">No hay operarios</p>
-                  <p className="text-sm">Añade operarios a este contrato</p>
+              ))}
+              {/* Value items */}
+              {selected.valueItems?.length > 0 && (
+                <div className="p-3 rounded-xl bg-card border border-border">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Valor Agregado</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.valueItems.map((v,i) => (
+                      <span key={i} className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                        {v.quantity} {v.type}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                selected.workers.map((w) => (
-                  <Card key={w.id} className="p-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium">{w.name}</p>
-                        <p className="text-sm text-muted-foreground">{w.position}</p>
-                        {w.phone && <p className="text-sm text-muted-foreground">{w.phone}</p>}
-                      </div>
-                      <Button
-                        variant="ghost" size="icon"
-                        onClick={() => { setWorkerToDelete(w.id); setDeleteWorkerOpen(true) }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))
               )}
+              {/* Delete */}
+              <button onClick={()=>setDeleteContractOpen(true)}
+                className="w-full mt-2 py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-semibold
+                  flex items-center justify-center gap-2 hover:bg-destructive/5 transition-colors">
+                <Trash2 className="h-4 w-4" /> Eliminar Contrato
+              </button>
             </div>
           )}
-
-          {activeTab === "visits" && <VisitsPanel contractId={selected.id} />}
+          {activeTab==="notes"   && <NotesPanel contractId={selected.id} />}
+          {activeTab==="workers" && (
+            <div className="space-y-3 animate-fade-up">
+              <button onClick={()=>setWorkerModalOpen(true)}
+                className="w-full py-2.5 rounded-xl border-2 border-dashed border-border text-sm font-semibold text-muted-foreground
+                  flex items-center justify-center gap-2 hover:border-primary hover:text-primary transition-colors">
+                <Plus className="h-4 w-4" /> Añadir Operario
+              </button>
+              {!selected.workers?.length ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground text-center">
+                  <Users className="h-10 w-10 mb-2 opacity-30" />
+                  <p className="text-sm font-medium">Sin operarios</p>
+                  <p className="text-xs">Añade operarios a este contrato</p>
+                </div>
+              ) : selected.workers.map((w) => (
+                <div key={w.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                    {w.name.substring(0,2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{w.name}</p>
+                    <p className="text-xs text-muted-foreground">{w.position}{w.phone ? ` · ${w.phone}`:""}</p>
+                  </div>
+                  <button onClick={()=>{setWorkerToDelete(w.id);setDeleteWorkerOpen(true)}}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {activeTab==="visits" && <VisitsPanel contractId={selected.id} />}
         </div>
 
-        {/* Confirm: delete contract */}
-        <ConfirmDialog
-          open={deleteContractOpen}
-          onOpenChange={setDeleteContractOpen}
-          title="Eliminar Contrato"
-          description={`¿Estás seguro de que deseas eliminar "${selected.name}"? Esta acción no se puede deshacer y se perderán todas sus notas, operarios y visitas.`}
-          confirmLabel="Eliminar"
-          destructive
-          onConfirm={handleDeleteContract}
-        />
-
-        {/* Confirm: delete worker */}
-        <ConfirmDialog
-          open={deleteWorkerOpen}
-          onOpenChange={setDeleteWorkerOpen}
-          title="Eliminar Operario"
-          description="¿Estás seguro de que deseas eliminar este operario del contrato?"
-          confirmLabel="Eliminar"
-          destructive
-          onConfirm={handleDeleteWorker}
-        />
+        <ConfirmDialog open={deleteContractOpen} onOpenChange={setDeleteContractOpen}
+          title="Eliminar Contrato" confirmLabel="Eliminar" destructive onConfirm={handleDeleteContract}
+          description={`¿Eliminar "${selected.name}"? Se perderán todas sus notas, operarios y visitas.`} />
+        <ConfirmDialog open={deleteWorkerOpen} onOpenChange={setDeleteWorkerOpen}
+          title="Eliminar Operario" confirmLabel="Eliminar" destructive onConfirm={handleDeleteWorker}
+          description="¿Eliminar este operario del contrato?" />
 
         {/* Add worker modal */}
         <Dialog open={workerModalOpen} onOpenChange={setWorkerModalOpen}>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Nuevo Operario</DialogTitle></DialogHeader>
-            <form onSubmit={handleAddWorker} className="space-y-4">
-              <div className="space-y-2"><Label>Nombre</Label><Input value={workerForm.name} onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })} required /></div>
-              <div className="space-y-2"><Label>Cargo</Label><Input value={workerForm.position} onChange={(e) => setWorkerForm({ ...workerForm, position: e.target.value })} required /></div>
-              <div className="space-y-2"><Label>Teléfono</Label><Input type="tel" value={workerForm.phone} onChange={(e) => setWorkerForm({ ...workerForm, phone: e.target.value })} /></div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setWorkerModalOpen(false)}>Cancelar</Button>
-                <Button type="submit">Guardar</Button>
+            <form onSubmit={handleAddWorker} className="space-y-4 mt-1">
+              {[{id:"name",label:"Nombre"},{id:"position",label:"Cargo"}].map(({id,label})=>(
+                <div key={id} className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</Label>
+                  <Input value={(workerForm as any)[id]} onChange={(e)=>setWorkerForm({...workerForm,[id]:e.target.value})} required className="h-10"/>
+                </div>
+              ))}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Teléfono</Label>
+                <Input type="tel" value={workerForm.phone} onChange={(e)=>setWorkerForm({...workerForm,phone:e.target.value})} className="h-10"/>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={()=>setWorkerModalOpen(false)}>Cancelar</Button>
+                <Button type="submit" className="flex-1">Guardar</Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
 
-        {/* Edit contract modal */}
+        {/* Edit modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Editar Contrato</DialogTitle></DialogHeader>
@@ -336,61 +296,70 @@ export function ContractsList() {
     )
   }
 
-  // ── List view ─────────────────────────────────────────────────────────────
+  /* ── List view ── */
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Contratos</h2>
-          <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Nuevo</Button>
+      {/* Search + action bar */}
+      <div className="shrink-0 px-4 pt-4 pb-3 space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input type="search" placeholder="Buscar contrato..." value={search}
+              onChange={(e)=>setSearch(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 text-sm border border-border rounded-xl bg-card
+                focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring transition-colors" />
+          </div>
+          <button onClick={openAdd}
+            className="h-10 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
+              flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all">
+            <Plus className="h-4 w-4" /> Nuevo
+          </button>
         </div>
-        <input
-          type="search"
-          placeholder="Buscar contrato..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background"
-        />
+        <p className="text-xs text-muted-foreground px-0.5">
+          {filtered.length} contrato{filtered.length!==1?"s":""}{search?" encontrado":search?"s encontrados":"s en total"}
+        </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-            <FileText className="h-16 w-16 mb-4 opacity-40" />
-            <p className="font-medium">{search ? "No hay coincidencias" : "No hay contratos"}</p>
-            <p className="text-sm">{search ? "Prueba otra búsqueda" : "Añade tu primer contrato"}</p>
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
+        {filtered.length===0 ? (
+          <div className="flex flex-col items-center justify-center h-full py-20 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+            <p className="font-semibold text-foreground">{search?"Sin coincidencias":"Sin contratos"}</p>
+            <p className="text-sm text-muted-foreground mt-1">{search?"Intenta otra búsqueda":"Añade tu primer contrato"}</p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((contract) => {
-              const initials  = contract.name.substring(0, 2).toUpperCase()
-              const lastNote  = contract.notes?.length
-                ? contract.notes[contract.notes.length - 1].content
-                : contract.client
-              return (
-                <div
-                  key={contract.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border cursor-pointer hover:bg-accent/50 transition-colors"
-                  onClick={() => setSelectedId(contract.id)}
-                >
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold flex-shrink-0">
-                    {initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium truncate">{contract.name}</span>
-                      <Badge className={`${getStatusColor(contract.status)} text-xs ml-2`}>{getStatusLabel(contract.status)}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">{lastNote}</p>
-                  </div>
+        ) : filtered.map((contract, i) => {
+          const initials  = contract.name.substring(0,2).toUpperCase()
+          const lastNote  = contract.notes?.length ? contract.notes[contract.notes.length-1].content : contract.client
+          const COLORS    = ["bg-violet-500","bg-sky-500","bg-emerald-500","bg-orange-500","bg-pink-500","bg-indigo-500"]
+          const color     = COLORS[i % COLORS.length]
+          return (
+            <button key={contract.id} onClick={()=>setSelectedId(contract.id)}
+              className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-card border border-border
+                hover:border-primary/30 hover:shadow-md hover:shadow-primary/5
+                active:scale-[0.99] transition-all text-left group">
+              <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm`}>
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold truncate">{contract.name}</span>
                 </div>
-              )
-            })}
-          </div>
-        )}
+                <p className="text-xs text-muted-foreground truncate">{lastNote}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <StatusPill status={contract.status} />
+                {contract.workers?.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{contract.workers.length} operario{contract.workers.length!==1?"s":""}</span>
+                )}
+              </div>
+            </button>
+          )
+        })}
       </div>
 
-      {/* New contract modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nuevo Contrato</DialogTitle></DialogHeader>
@@ -399,4 +368,8 @@ export function ContractsList() {
       </Dialog>
     </div>
   )
+}
+
+function Users({ className }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 }

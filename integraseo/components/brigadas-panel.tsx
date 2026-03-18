@@ -2,136 +2,136 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useStore } from "@/lib/store"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Search, RotateCcw, Leaf, Sparkles } from "lucide-react"
 import type { BrigadaServices } from "@/lib/types"
 
-interface BrigadaState {
-  [contractId: string]: BrigadaServices
-}
+interface BrigadaState { [id: string]: BrigadaServices }
 
 export function BrigadasPanel() {
   const { contracts, getBrigadaServices, updateBrigadaServices } = useStore()
-  const [brigadas, setBrigadas] = useState<BrigadaState>({})
-  const [loading, setLoading] = useState(true)
-  const [resetDialogOpen, setResetDialogOpen] = useState(false)
-  const [resetting, setResetting] = useState(false)
-  const [search, setSearch] = useState("")
+  const [brigadas, setBrigadas]         = useState<BrigadaState>({})
+  const [loading, setLoading]           = useState(true)
+  const [resetOpen, setResetOpen]       = useState(false)
+  const [resetting, setResetting]       = useState(false)
+  const [search, setSearch]             = useState("")
 
-  const loadBrigadas = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true)
-    const result: BrigadaState = {}
-    for (const contract of contracts) {
-      result[contract.id] = await getBrigadaServices(contract.id)
-    }
-    setBrigadas(result)
-    setLoading(false)
+    const r: BrigadaState = {}
+    for (const c of contracts) r[c.id] = await getBrigadaServices(c.id)
+    setBrigadas(r); setLoading(false)
   }, [contracts, getBrigadaServices])
 
-  useEffect(() => {
-    if (contracts.length > 0) loadBrigadas()
-    else setLoading(false)
-  }, [contracts, loadBrigadas])
+  useEffect(() => { if(contracts.length>0) load(); else setLoading(false) }, [contracts, load])
 
-  const handleToggle = async (contractId: string, service: "jardineria" | "aseo", value: boolean) => {
-    const current = brigadas[contractId] || { jardineria: false, aseo: false }
-    const updated = { ...current, [service]: value }
-    setBrigadas((prev) => ({ ...prev, [contractId]: updated }))
-    await updateBrigadaServices(contractId, updated)
+  const toggle = async (id:string, svc:"jardineria"|"aseo", val:boolean) => {
+    const cur = brigadas[id]||{jardineria:false,aseo:false}
+    const upd = {...cur,[svc]:val}
+    setBrigadas(p=>({...p,[id]:upd}))
+    await updateBrigadaServices(id,upd)
   }
 
   const handleReset = async () => {
     setResetting(true)
-    for (const contract of contracts) {
-      await updateBrigadaServices(contract.id, { jardineria: false, aseo: false })
-    }
-    const result: BrigadaState = {}
-    for (const contract of contracts) {
-      result[contract.id] = { jardineria: false, aseo: false }
-    }
-    setBrigadas(result)
-    setResetting(false)
-    setResetDialogOpen(false)
+    for (const c of contracts) await updateBrigadaServices(c.id,{jardineria:false,aseo:false})
+    const r:BrigadaState={}
+    for (const c of contracts) r[c.id]={jardineria:false,aseo:false}
+    setBrigadas(r); setResetting(false); setResetOpen(false)
   }
 
-  const filtered = contracts.filter((c) => {
-    const q = search.toLowerCase()
-    return !q || c.name.toLowerCase().includes(q) || c.client.toLowerCase().includes(q)
+  const filtered = contracts.filter(c=>{
+    const q=search.toLowerCase(); return !q||c.name.toLowerCase().includes(q)||c.client.toLowerCase().includes(q)
   })
+
+  const checkedCount = Object.values(brigadas).filter(b=>b.jardineria||b.aseo).length
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Brigadas</h2>
-          <Button variant="outline" size="sm" onClick={() => setResetDialogOpen(true)}>
-            Limpiar verificaciones
-          </Button>
-        </div>
-        <input
-          type="search"
-          placeholder="Buscar contrato..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background"
-        />
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4">
-        {loading ? (
-          <div className="flex items-center justify-center h-40 text-muted-foreground">Cargando brigadas...</div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-            <p className="font-medium">{search ? "No hay contratos que coincidan" : "No hay contratos"}</p>
-            <p className="text-sm">{search ? "Prueba otra búsqueda" : "Añade contratos para ver las brigadas"}</p>
+      {/* Toolbar */}
+      <div className="shrink-0 px-4 pt-4 pb-3 space-y-3">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
+            <input type="search" placeholder="Buscar contrato..." value={search}
+              onChange={e=>setSearch(e.target.value)}
+              className="w-full h-10 pl-9 pr-3 text-sm border border-border rounded-xl bg-card
+                focus:outline-none focus:ring-2 focus:ring-ring/50 transition-colors"/>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((contract) => {
-              const services = brigadas[contract.id] || { jardineria: false, aseo: false }
-              return (
-                <Card key={contract.id} className="p-4">
-                  <div className="mb-3">
-                    <h3 className="font-semibold">{contract.name}</h3>
-                    <p className="text-sm text-muted-foreground">{contract.client}</p>
-                  </div>
-                  <div className="flex gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={services.jardineria}
-                        onCheckedChange={(v) => handleToggle(contract.id, "jardineria", !!v)}
-                      />
-                      <span className="text-sm">Jardinería</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox
-                        checked={services.aseo}
-                        onCheckedChange={(v) => handleToggle(contract.id, "aseo", !!v)}
-                      />
-                      <span className="text-sm">Aseo</span>
-                    </label>
-                  </div>
-                </Card>
-              )
-            })}
+          <button onClick={()=>setResetOpen(true)} title="Limpiar verificaciones"
+            className="h-10 w-10 rounded-xl border border-border bg-card flex items-center justify-center
+              hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+            <RotateCcw className="h-4 w-4"/>
+          </button>
+        </div>
+        {!loading&&(
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{width:`${contracts.length?checkedCount/contracts.length*100:0}%`}}/>
+            </div>
+            <p className="text-xs text-muted-foreground shrink-0">{checkedCount}/{contracts.length}</p>
           </div>
         )}
       </div>
 
-      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
+        {loading ? (
+          <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">Cargando brigadas...</div>
+        ) : filtered.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
+              <span className="text-2xl">🌿</span>
+            </div>
+            <p className="text-sm font-medium">{search?"Sin coincidencias":"Sin contratos"}</p>
+          </div>
+        ) : filtered.map(c=>{
+          const s = brigadas[c.id]||{jardineria:false,aseo:false}
+          const anyChecked = s.jardineria||s.aseo
+          return (
+            <div key={c.id} className={`p-4 rounded-2xl border transition-all
+              ${anyChecked?"bg-primary/5 border-primary/30":"bg-card border-border"}`}>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="text-sm font-semibold leading-tight">{c.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{c.client}</p>
+                </div>
+                {anyChecked&&(
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                    {[s.jardineria&&"Jard.",s.aseo&&"Aseo"].filter(Boolean).join(" · ")}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-3">
+                {[
+                  { key:"jardineria" as const, label:"Jardinería", Icon:Leaf,     color:"text-emerald-600 dark:text-emerald-400" },
+                  { key:"aseo"       as const, label:"Aseo",       Icon:Sparkles, color:"text-sky-600 dark:text-sky-400" },
+                ].map(({key,label,Icon,color})=>(
+                  <button key={key} onClick={()=>toggle(c.id,key,!s[key])}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border text-sm font-semibold transition-all
+                      ${s[key]
+                        ?"bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20"
+                        :"bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
+                    <Icon className={`h-4 w-4 ${s[key]?"text-primary-foreground":color}`}/>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Limpiar verificaciones</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            ¿Estás seguro de que deseas limpiar todas las verificaciones? Esta acción no se puede deshacer.
-          </p>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setResetDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleReset} disabled={resetting}>
-              {resetting ? "Limpiando..." : "Confirmar"}
+          <DialogHeader><DialogTitle>Limpiar Verificaciones</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">¿Limpiar todas las verificaciones de jardinería y aseo? Esta acción no se puede deshacer.</p>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" className="flex-1" onClick={()=>setResetOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" className="flex-1" onClick={handleReset} disabled={resetting}>
+              {resetting?"Limpiando...":"Confirmar"}
             </Button>
           </div>
         </DialogContent>

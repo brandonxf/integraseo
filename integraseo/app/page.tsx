@@ -13,49 +13,69 @@ import { useStore } from "@/lib/store"
 type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios"
 
 const NAV_ITEMS: { id: View; label: string; short: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: "contracts",       label: "Contratos",      short: "Contratos",  Icon: FileText  },
-  { id: "calendar",        label: "Calendario",     short: "Calendario", Icon: Calendar  },
-  { id: "reminders",       label: "Recordatorios",  short: "Recordat.",  Icon: Bell      },
-  { id: "brigadas",        label: "Brigadas",       short: "Brigadas",   Icon: Users     },
-  { id: "supernumerarios", label: "Supernumerarios",short: "Supern.",    Icon: UserPlus  },
+  { id: "contracts",        label: "Contratos",       short: "Contratos",  Icon: FileText  },
+  { id: "calendar",         label: "Calendario",      short: "Calendario", Icon: Calendar  },
+  { id: "reminders",        label: "Recordatorios",   short: "Recordat.",  Icon: Bell      },
+  { id: "brigadas",         label: "Brigadas",        short: "Brigadas",   Icon: Users     },
+  { id: "supernumerarios",  label: "Supernumerarios", short: "Supern.",    Icon: UserPlus  },
 ]
 
 export default function Home() {
   const [currentView, setCurrentView] = useState<View>("contracts")
-  const loadAll = useStore((state) => state.loadAll)
-  const loading = useStore((state) => state.loading)
+  const [prevView, setPrevView] = useState<View>("contracts")
+  const loadAll = useStore((s) => s.loadAll)
+  const loading = useStore((s) => s.loading)
 
   useEffect(() => { loadAll() }, [loadAll])
 
-  return (
-    <div className="flex h-screen flex-col bg-background">
+  const navigate = (id: View) => {
+    setPrevView(currentView)
+    setCurrentView(id)
+  }
 
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 shrink-0">
-        <h1 className="text-xl font-semibold text-foreground">
-          {NAV_ITEMS.find((n) => n.id === currentView)?.label ?? "Integraseo"}
-        </h1>
+  const currentItem = NAV_ITEMS.find((n) => n.id === currentView)!
+
+  return (
+    <div className="flex h-screen flex-col bg-background overflow-hidden">
+
+      {/* ── Header ─────────────────────────────────────── */}
+      <header className="shrink-0 flex items-center justify-between px-5 py-4
+        bg-gradient-to-r from-primary/90 to-primary
+        dark:from-primary/70 dark:to-primary/80
+        shadow-lg shadow-primary/20">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm">
+            <currentItem.Icon className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <h1 className="text-[15px] font-semibold text-white leading-none tracking-tight">
+              {currentItem.label}
+            </h1>
+            <p className="text-[11px] text-white/60 mt-0.5 leading-none">Integraseo</p>
+          </div>
+        </div>
         <ThemeToggle />
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
+      {/* ── Content ────────────────────────────────────── */}
+      <main className="flex-1 overflow-hidden relative">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Cargando datos...</p>
+          <div className="flex flex-col items-center justify-center h-full gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-sm text-muted-foreground">Cargando datos...</p>
           </div>
         ) : (
-          <>
+          <div key={currentView} className="h-full animate-fade-up">
             {currentView === "contracts"       && <ContractsList />}
             {currentView === "calendar"        && <CalendarPanel />}
             {currentView === "reminders"       && <RemindersPanel />}
             {currentView === "brigadas"        && <BrigadasPanel />}
             {currentView === "supernumerarios" && <SupernumerariosPanel />}
-          </>
+          </div>
         )}
       </main>
 
-      {/* Bottom Navigation — floating pill */}
+      {/* ── Navbar (floating pill — untouched) ─────────── */}
       <div className="shrink-0 flex justify-center pb-4 pt-2 px-4 bg-background">
         <nav className="flex items-center gap-1 bg-card border border-border rounded-2xl px-2 py-2 shadow-lg shadow-black/10 dark:shadow-black/40">
           {NAV_ITEMS.map(({ id, label, short, Icon }) => {
@@ -63,7 +83,7 @@ export default function Home() {
             return (
               <button
                 key={id}
-                onClick={() => setCurrentView(id)}
+                onClick={() => navigate(id)}
                 title={label}
                 className={[
                   "relative flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition-all duration-200",
@@ -81,7 +101,6 @@ export default function Home() {
           })}
         </nav>
       </div>
-
     </div>
   )
 }
