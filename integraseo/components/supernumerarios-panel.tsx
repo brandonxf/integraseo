@@ -177,8 +177,6 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
     const ws = XLSX.utils.json_to_sheet(data)
     // Column widths
     ws["!cols"] = [{ wch: 15 }, { wch: 25 }, { wch: 40 }, { wch: 20 }]
-    // Freeze header row and ensure view starts at A1
-    ws["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1, topLeftCell: "A2", activeCell: "A1" }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Supernumerarios")
     XLSX.writeFile(wb, `Supernumerarios_${new Date().toLocaleDateString("es-ES").replace(/\//g, "-")}.xlsx`)
