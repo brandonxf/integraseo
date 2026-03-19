@@ -1,5 +1,7 @@
 "use client"
 
+import * as XLSX from "xlsx"
+
 import { useEffect, useState, useCallback } from "react"
 import { useStore } from "@/lib/store"
 import { Card } from "@/components/ui/card"
@@ -165,22 +167,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
   }
 
   const exportToExcel = () => {
-    if (typeof window === "undefined") return
-    const existing = document.querySelector('script[src*="xlsx"]')
-    if (existing) {
-      doExport()
-      return
-    }
-    const script = document.createElement("script")
-    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-    script.onload = doExport
-    document.head.appendChild(script)
-  }
-
-  const doExport = () => {
-    // @ts-expect-error XLSX loaded globally
-    const XLSX = window.XLSX
-    if (!XLSX) return
+    if (!entries.length) return
     const data = entries.map((e) => ({
       Fecha: e.fecha,
       "Nombre del Operario": e.nombre,
@@ -192,6 +179,7 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Supernumerarios")
     XLSX.writeFile(wb, `Supernumerarios_${new Date().toLocaleDateString("es-ES").replace(/\//g, "-")}.xlsx`)
+    toast.success("Excel descargado correctamente")
   }
 
   const filtered = entries.filter((e) => {
