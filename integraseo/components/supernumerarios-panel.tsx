@@ -174,8 +174,13 @@ export function SupernumerariosPanel({ search = "" }: { search?: string }) {
       "Trabajo Realizado": e.trabajo,
       Contrato: e.contractName,
     }))
-    const ws = XLSX.utils.json_to_sheet(data)
+    const ws = XLSX.utils.json_to_sheet(data, { origin: "A1" })
+    // Column widths
     ws["!cols"] = [{ wch: 15 }, { wch: 25 }, { wch: 40 }, { wch: 20 }]
+    // Freeze header row so it's always visible
+    ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft" }
+    // Ensure view starts at A1
+    ws["!views"] = [{ state: "frozen", xSplit: 0, ySplit: 1, topLeftCell: "A2", activeCell: "A1", activeCellId: 0 }]
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, "Supernumerarios")
     XLSX.writeFile(wb, `Supernumerarios_${new Date().toLocaleDateString("es-ES").replace(/\//g, "-")}.xlsx`)
