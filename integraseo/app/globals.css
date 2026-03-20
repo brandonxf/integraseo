@@ -137,11 +137,22 @@
 [data-slot="dialog-overlay"][data-state="closed"] { opacity: 0; }
 [data-slot="dialog-overlay"][data-state="open"]   { opacity: 1; }
 
-[data-slot="dialog-content"] {
-  transition: opacity 220ms ease, scale 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+@keyframes dialogIn {
+  0%   { opacity: 0; margin-top: 12px; }
+  60%  { opacity: 1; margin-top: -3px; }
+  100% { opacity: 1; margin-top: 0px;  }
 }
-[data-slot="dialog-content"][data-state="closed"] { opacity: 0; scale: 0.95; }
-[data-slot="dialog-content"][data-state="open"]   { opacity: 1; scale: 1; }
+@keyframes dialogOut {
+  from { opacity: 1; margin-top: 0px;  }
+  to   { opacity: 0; margin-top: 6px;  }
+}
+
+[data-slot="dialog-content"][data-state="open"] {
+  animation: dialogIn 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+[data-slot="dialog-content"][data-state="closed"] {
+  animation: dialogOut 160ms ease-in forwards;
+}
 
 /* Smooth page transitions */
 @keyframes fadeUp {
