@@ -2,7 +2,7 @@
 
 import * as XLSX from "xlsx"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,6 +68,59 @@ interface ContractFormProps {
   isEditing: boolean
 }
 
+function LocationInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const el = inputRef.current
+    if (!el) return
+    let autocomplete: google.maps.places.Autocomplete | null = null
+
+    const init = () => {
+      if (typeof google === "undefined" || !google.maps?.places) return
+      autocomplete = new google.maps.places.Autocomplete(el, {
+        componentRestrictions: { country: "co" },
+        fields: ["formatted_address", "geometry"],
+        types: ["geocode", "establishment"],
+      })
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete!.getPlace()
+        if (place.formatted_address) onChange(place.formatted_address)
+      })
+    }
+
+    // Try immediately, or wait for Maps to load
+    if (typeof google !== "undefined" && google.maps?.places) {
+      init()
+    } else {
+      const interval = setInterval(() => {
+        if (typeof google !== "undefined" && google.maps?.places) {
+          clearInterval(interval)
+          init()
+        }
+      }, 500)
+      return () => clearInterval(interval)
+    }
+
+    return () => {
+      if (autocomplete) google.maps.event.clearInstanceListeners(autocomplete)
+    }
+  }, [])
+
+  return (
+    <input
+      ref={inputRef}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder="Escribe para buscar dirección..."
+      className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm
+        ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium
+        placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2
+        focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    />
+  )
+}
+
 function ContractForm({
   form, onChange, valueItems, valueInput, valueError,
   onValueInputChange, onAddValueItem, onRemoveValueItem,
@@ -76,9 +129,8 @@ function ContractForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4 mt-1">
       {([
-        { id: "name",     label: "Nombre del Contrato", required: true  },
-        { id: "client",   label: "Cliente",             required: true  },
-        { id: "location", label: "Ubicación",           required: false },
+        { id: "name",   label: "Nombre del Contrato", required: true  },
+        { id: "client", label: "Cliente",             required: true  },
       ] as const).map(({ id, label, required }) => (
         <div key={id} className="space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</Label>
@@ -90,6 +142,13 @@ function ContractForm({
           />
         </div>
       ))}
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Ubicación
+        </Label>
+        <LocationInput value={form.location} onChange={(v) => onChange("location", v)} />
+      </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Valor Agregado</Label>
