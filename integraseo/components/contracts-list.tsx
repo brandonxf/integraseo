@@ -545,40 +545,24 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const pendingContracts   = filtered.filter(c => c.status === "pending")
   const completedContracts = filtered.filter(c => c.status === "completed")
 
-  const GRADIENT_PAIRS = [
-    { from: "#7c3aed", to: "#4f46e5" },  // violeta → índigo
-    { from: "#0ea5e9", to: "#06b6d4" },  // sky → cian
-    { from: "#10b981", to: "#059669" },  // esmeralda
-    { from: "#f97316", to: "#ef4444" },  // naranja → rojo
-    { from: "#ec4899", to: "#db2777" },  // rosa
-    { from: "#6366f1", to: "#8b5cf6" },  // índigo → violeta
-  ]
   const FALLBACK_COLORS = ["bg-violet-500","bg-sky-500","bg-emerald-500","bg-orange-500","bg-pink-500","bg-indigo-500"]
 
   const ContractCard = ({ contract, index }: { contract: typeof contracts[0]; index: number }) => {
     const initials = contract.name.substring(0, 2).toUpperCase()
     const lastNote = contract.notes?.length ? contract.notes[contract.notes.length - 1].content : contract.client
-    const grad     = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length]
-    const statusLine: Record<string, string> = {
-      active:    "bg-emerald-400",
-      pending:   "bg-amber-400",
-      completed: "bg-slate-300 dark:bg-slate-600",
-    }
-    const accentLine = statusLine[contract.status] ?? "bg-slate-300"
+    const color    = contract.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]
 
     if (compact) {
       return (
         <button onClick={() => setSelectedId(contract.id)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-card
-            shadow-[0_1px_4px_rgba(0,0,0,0.07)] hover:shadow-[0_3px_12px_rgba(0,0,0,0.11)]
-            active:scale-[0.985] transition-all duration-150 text-left overflow-hidden relative">
-          {/* Status accent line left */}
-          <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${accentLine} rounded-l-2xl`} />
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-            style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}>
+          className="w-full flex items-center gap-3 px-4 py-2.5
+            border-b border-border/60 last:border-0
+            hover:bg-muted/40 active:bg-muted/60
+            transition-colors duration-100 text-left">
+          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-[10px] font-semibold text-white shrink-0`}>
             {initials}
           </div>
-          <span className="text-[13px] font-semibold flex-1 truncate">{contract.name}</span>
+          <span className="text-[13px] font-medium flex-1 truncate text-foreground">{contract.name}</span>
           <StatusPill status={contract.status} />
         </button>
       )
@@ -586,47 +570,37 @@ export function ContractsList({ search = "" }: { search?: string }) {
 
     return (
       <button onClick={() => setSelectedId(contract.id)}
-        className="w-full text-left rounded-2xl overflow-hidden
-          shadow-[0_2px_8px_rgba(0,0,0,0.07),0_0_0_1px_rgba(0,0,0,0.04)]
-          hover:shadow-[0_6px_20px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)]
-          active:scale-[0.985] transition-all duration-150 bg-card dark:bg-card"
+        className="w-full text-left flex items-center gap-4 px-4 py-4
+          bg-card rounded-2xl
+          border border-border/70
+          hover:border-border
+          hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]
+          active:scale-[0.99]
+          transition-all duration-150"
       >
-        {/* Top gradient band */}
-        <div className="h-1.5 w-full" style={{ background: `linear-gradient(90deg, ${grad.from}, ${grad.to})` }} />
+        {/* Avatar — clean monogram */}
+        <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
+          <span className="text-[13px] font-semibold text-white tracking-wide">{initials}</span>
+        </div>
 
-        <div className="px-4 pt-3.5 pb-3.5 flex items-center gap-4">
-          {/* Avatar — big, bold, gradient */}
-          <div className="relative shrink-0">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-base font-bold text-white"
-              style={{
-                background: `linear-gradient(135deg, ${grad.from}, ${grad.to})`,
-                boxShadow: `0 4px 12px ${grad.from}55`,
-              }}>
-              {initials}
-            </div>
-            {/* Status dot on avatar */}
-            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${accentLine}`} />
-          </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[14px] font-semibold text-foreground truncate leading-tight tracking-[-0.01em]">
+            {contract.name}
+          </p>
+          <p className="text-[12px] text-muted-foreground truncate mt-0.5">
+            {lastNote}
+          </p>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-semibold text-foreground truncate leading-snug tracking-tight">
-              {contract.name}
-            </p>
-            <p className="text-[11.5px] text-muted-foreground/65 truncate mt-0.5 leading-tight">
-              {lastNote}
-            </p>
-          </div>
-
-          {/* Right metadata */}
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <StatusPill status={contract.status} />
-            {contract.workers?.length > 0 && (
-              <span className="text-[10px] text-muted-foreground/45 font-medium tabular-nums">
-                {contract.workers.length} op.
-              </span>
-            )}
-          </div>
+        {/* Right */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <StatusPill status={contract.status} />
+          {contract.workers?.length > 0 && (
+            <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+              {contract.workers.length} op.
+            </span>
+          )}
         </div>
       </button>
     )

@@ -17,9 +17,9 @@
   --brand-900: oklch(0.22 0.10 263);
 
   /* Tokens */
-  --background:        oklch(0.965 0.005 240);
+  --background:        oklch(0.975 0.003 240);
   --foreground:        oklch(0.13 0.015 255);
-  --card:              oklch(1 0 0 / 100%);
+  --card:              oklch(1 0 0);
   --card-foreground:   oklch(0.13 0.015 255);
   --popover:           oklch(1 0 0);
   --popover-foreground:oklch(0.13 0.015 255);
