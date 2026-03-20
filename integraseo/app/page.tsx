@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { FileText, Calendar, Bell, Users, UserPlus, Search, BarChart2, Menu, X } from "lucide-react"
+import { FileText, Calendar, Bell, Users, UserPlus, Search, BarChart2, Menu, X, Map } from "lucide-react"
 import { ContractsList } from "@/components/contracts-list"
 import { CalendarPanel } from "@/components/calendar-panel"
 import { RemindersPanel } from "@/components/reminders-panel"
@@ -9,11 +9,12 @@ import { BrigadasPanel } from "@/components/brigadas-panel"
 import { SupernumerariosPanel } from "@/components/supernumerarios-panel"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { StatsPanel } from "@/components/stats-panel"
+import { MapPanel } from "@/components/map-panel"
 import { useStore } from "@/lib/store"
 import { ContractListSkeleton, StatsSkeleton } from "@/components/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 
-type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios" | "stats"
+type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerarios" | "stats" | "map"
 
 // Items shown directly in the navbar pill
 const MAIN_NAV: { id: View; label: string; short: string; Icon: React.FC<{ className?: string }> }[] = [
@@ -27,6 +28,7 @@ const MAIN_NAV: { id: View; label: string; short: string; Icon: React.FC<{ class
 const MENU_NAV: { id: View; label: string; description: string; Icon: React.FC<{ className?: string }> }[] = [
   { id: "stats",     label: "Estadísticas",   description: "Dashboard y métricas", Icon: BarChart2 },
   { id: "reminders", label: "Recordatorios",  description: "Tareas y alertas",     Icon: Bell      },
+  { id: "map",       label: "Ubicaciones",    description: "Mapa de contratos",    Icon: Map       },
 ]
 
 const ALL_NAV = [...MAIN_NAV, ...MENU_NAV]
@@ -109,6 +111,7 @@ export default function Home() {
               className="h-full overflow-y-auto"
             >
               {currentView === "stats"           && <StatsPanel />}
+              {currentView === "map"             && <MapPanel />}
               {currentView === "contracts"       && <ContractsList search={headerSearch} />}
               {currentView === "calendar"        && <CalendarPanel />}
               {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}

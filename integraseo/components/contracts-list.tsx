@@ -1,5 +1,7 @@
 "use client"
 
+import * as XLSX from "xlsx"
+
 import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -13,7 +15,7 @@ import { VisitsPanel } from "@/components/visits-panel"
 import {
   Edit, Trash2, FileText, ChevronLeft, Plus, X,
   AlertCircle, MapPin, Briefcase, CheckCircle2, Clock, XCircle, FileDown,
-  LayoutList, LayoutGrid
+  LayoutList, LayoutGrid, FileSpreadsheet
 } from "lucide-react"
 import { EmptyState } from "@/components/empty-state"
 import type { ValueItem } from "@/lib/types"
@@ -334,6 +336,33 @@ export function ContractsList({ search = "" }: { search?: string }) {
     }
   }
 
+  const handleExportExcel = () => {
+    const data = contracts.map((c) => ({
+      "Nombre":     c.name,
+      "Cliente":    c.client,
+      "Ubicación":  c.location || "",
+      "Estado":     c.status === "active" ? "Activo" : c.status === "pending" ? "Pendiente" : "Completado",
+      "Operarios":  (c.workers || []).map(w => `${w.name} (${w.position})`).join(", "),
+      "N° Operarios": c.workers?.length || 0,
+      "N° Visitas": c.visits?.length || 0,
+      "N° Notas":   c.notes?.length || 0,
+      "Última nota": c.notes?.length
+        ? c.notes[c.notes.length - 1].content.slice(0, 80)
+        : "",
+      "Creado el":  c.createdAt ? new Date(c.createdAt).toLocaleDateString("es-ES") : "",
+    }))
+    const ws = XLSX.utils.json_to_sheet(data)
+    ws["!cols"] = [
+      { wch: 28 }, { wch: 22 }, { wch: 24 }, { wch: 12 },
+      { wch: 40 }, { wch: 13 }, { wch: 11 }, { wch: 10 },
+      { wch: 40 }, { wch: 14 },
+    ]
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Contratos")
+    XLSX.writeFile(wb, `Contratos_${new Date().toLocaleDateString("es-ES").replace(/\//g, "-")}.xlsx`)
+    toast.success("Excel descargado correctamente")
+  }
+
   const filtered = contracts.filter((c) => {
     const q = search.toLowerCase()
     return !q || c.name.toLowerCase().includes(q) || c.client.toLowerCase().includes(q)
@@ -630,6 +659,16 @@ export function ContractsList({ search = "" }: { search?: string }) {
             title={compact ? "Vista expandida" : "Vista compacta"}
           >
             {compact ? <LayoutList className="h-[15px] w-[15px]" /> : <LayoutGrid className="h-[15px] w-[15px]" />}
+          </button>
+          <button
+            onClick={handleExportExcel}
+            disabled={contracts.length === 0}
+            className="w-8 h-8 rounded-xl flex items-center justify-center
+              text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-50
+              dark:hover:bg-emerald-950/30 disabled:opacity-30 transition-all"
+            title="Exportar a Excel"
+          >
+            <FileSpreadsheet className="h-[15px] w-[15px]" />
           </button>
           <button
             onClick={openAdd}
