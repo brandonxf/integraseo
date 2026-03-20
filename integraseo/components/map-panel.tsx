@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useStore } from "@/lib/store"
 import { MapPin, Search, X, Loader2 } from "lucide-react"
 
-const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!
-
 const STATUS_DOT: Record<string, string> = {
   active:    "#10b981",
   pending:   "#f59e0b",
@@ -24,21 +22,18 @@ interface GeoContract {
   location: string; color: string; lat: number; lng: number
 }
 
-// Load Google Maps script once
-let mapsLoaded = false
-let mapsLoading: Promise<void> | null = null
-
-function loadGoogleMaps(): Promise<void> {
-  if (mapsLoaded) return Promise.resolve()
-  if (mapsLoading) return mapsLoading
-  mapsLoading = new Promise((resolve) => {
-    const script = document.createElement("script")
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&libraries=places&language=es&region=CO`
-    script.async = true
-    script.onload = () => { mapsLoaded = true; resolve() }
-    document.head.appendChild(script)
+// Wait for Google Maps to be ready (loaded via layout.tsx Script tag)
+function waitForGoogleMaps(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof google !== "undefined" && google.maps) return resolve()
+    const interval = setInterval(() => {
+      if (typeof google !== "undefined" && google.maps) {
+        clearInterval(interval)
+        resolve()
+      }
+    }, 100)
+    setTimeout(() => { clearInterval(interval); resolve() }, 10000)
   })
-  return mapsLoading
 }
 
 async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
@@ -81,7 +76,7 @@ export function MapPanel() {
     let cancelled = false
 
     const run = async () => {
-      await loadGoogleMaps()
+      await waitForGoogleMaps()
       if (cancelled || !mapRef.current) return
 
       // Init map centered on Colombia
