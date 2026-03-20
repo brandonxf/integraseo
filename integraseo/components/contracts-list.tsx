@@ -35,17 +35,18 @@ const CONTRACT_COLORS = [
   { label: "Lima",     value: "bg-lime-500",     hex: "#84cc16" },
 ]
 
-// ── Status pill ────────────────────────────────────────────────────────────────
+// ── Status indicator — minimal dot + muted label ───────────────────────────
 function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string; Icon: React.FC<{ className?: string }> }> = {
-    active:    { label: "Activo",     cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400", Icon: CheckCircle2 },
-    pending:   { label: "Pendiente",  cls: "bg-amber-100  text-amber-700  dark:bg-amber-900/40  dark:text-amber-400",  Icon: Clock },
-    completed: { label: "Completado", cls: "bg-sky-100    text-sky-700    dark:bg-sky-900/40    dark:text-sky-400",    Icon: XCircle },
+  const map: Record<string, { label: string; dot: string; text: string }> = {
+    active:    { label: "Activo",     dot: "bg-emerald-400", text: "text-emerald-600 dark:text-emerald-400" },
+    pending:   { label: "Pendiente",  dot: "bg-amber-400",   text: "text-amber-600   dark:text-amber-400"   },
+    completed: { label: "Completado", dot: "bg-slate-400",   text: "text-slate-500   dark:text-slate-400"   },
   }
-  const s = map[status] ?? { label: status, cls: "bg-muted text-muted-foreground", Icon: Clock }
+  const s = map[status] ?? { label: status, dot: "bg-slate-400", text: "text-slate-500" }
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${s.cls}`}>
-      <s.Icon className="h-3 w-3" />{s.label}
+    <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot} shrink-0`} />
+      {s.label}
     </span>
   )
 }
@@ -554,34 +555,47 @@ export function ContractsList({ search = "" }: { search?: string }) {
     if (compact) {
       return (
         <button onClick={() => setSelectedId(contract.id)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-card border border-border
-            hover:border-primary/30 hover:bg-accent/30 active:scale-[0.99] transition-all text-left">
-          <div className={`w-7 h-7 rounded-lg ${color} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-card
+            shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.10)]
+            active:scale-[0.99] transition-all text-left border border-transparent hover:border-black/5">
+          <div className={`w-8 h-8 rounded-xl ${color} flex items-center justify-center text-[11px] font-bold text-white shrink-0`}>
             {initials}
           </div>
-          <span className="text-sm font-medium flex-1 truncate">{contract.name}</span>
+          <span className="text-sm font-semibold flex-1 truncate text-foreground">{contract.name}</span>
           <StatusPill status={contract.status} />
         </button>
       )
     }
 
     return (
-      <button key={contract.id} onClick={() => setSelectedId(contract.id)}
-        className="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-card border border-border
-          hover:border-primary/30 hover:shadow-md hover:shadow-primary/5
-          active:scale-[0.99] transition-all text-left group"
+      <button onClick={() => setSelectedId(contract.id)}
+        className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-card
+          shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]
+          hover:shadow-[0_4px_16px_rgba(0,0,0,0.10)]
+          active:scale-[0.99] transition-all duration-150 text-left
+          border border-transparent hover:border-black/[0.04] dark:border-white/[0.04]"
       >
-        <div className={`w-11 h-11 rounded-xl ${color} flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-sm`}>
+        {/* Avatar */}
+        <div className={`w-11 h-11 rounded-2xl ${color} flex items-center justify-center text-sm font-bold text-white shrink-0`}
+          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
           {initials}
         </div>
+
+        {/* Info */}
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-semibold truncate block">{contract.name}</span>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">{lastNote}</p>
+          <span className="text-[15px] font-semibold tracking-tight text-foreground truncate block leading-tight">
+            {contract.name}
+          </span>
+          <p className="text-[12px] text-muted-foreground/70 truncate mt-0.5 leading-tight font-normal">
+            {lastNote}
+          </p>
         </div>
+
+        {/* Right side */}
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <StatusPill status={contract.status} />
           {contract.workers?.length > 0 && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground/50 font-medium">
               {contract.workers.length} operario{contract.workers.length !== 1 ? "s" : ""}
             </span>
           )}
@@ -591,35 +605,37 @@ export function ContractsList({ search = "" }: { search?: string }) {
   }
 
   const SectionHeader = ({ label, count, color }: { label: string; count: number; color: string }) => (
-    <div className="flex items-center gap-2 px-1 pt-2 pb-1">
-      <div className={`w-2 h-2 rounded-full ${color}`} />
-      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{label}</span>
-      <span className="text-xs font-bold text-muted-foreground">· {count}</span>
+    <div className="flex items-center gap-2 px-1 pt-3 pb-1.5">
+      <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+      <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-[0.08em]">{label}</span>
+      <span className="text-[10px] font-semibold text-muted-foreground/40 ml-0.5">{count}</span>
     </div>
   )
 
   return (
     <div className="flex flex-col h-full">
-      <div className="shrink-0 px-4 pt-4 pb-3 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
+      <div className="shrink-0 px-4 pt-3 pb-2.5 flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium text-muted-foreground/60">
           {filtered.length} contrato{filtered.length !== 1 ? "s" : ""}
         </p>
-        <div className="flex items-center gap-1.5">
-          {/* Compact/Expanded toggle */}
+        <div className="flex items-center gap-2">
           <button onClick={() => setCompact(c => !c)}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
-              compact ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+              compact
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/60"
             }`}
             title={compact ? "Vista expandida" : "Vista compacta"}
           >
-            {compact ? <LayoutList className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+            {compact ? <LayoutList className="h-[15px] w-[15px]" /> : <LayoutGrid className="h-[15px] w-[15px]" />}
           </button>
           <button
             onClick={openAdd}
-            className="h-8 px-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold
-              flex items-center gap-1.5 shadow-sm shadow-primary/30 hover:brightness-110 active:scale-95 transition-all"
+            className="h-8 px-4 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold
+              flex items-center gap-1.5 hover:brightness-110 active:scale-[0.97] transition-all"
+            style={{ boxShadow: "0 2px 8px rgba(79,70,229,0.35)" }}
           >
-            <Plus className="h-4 w-4" /> Nuevo
+            <Plus className="h-3.5 w-3.5" /> Nuevo
           </button>
         </div>
       </div>
@@ -639,7 +655,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
             ) : undefined}
           />
         ) : (
-          <div className={compact ? "space-y-1" : "space-y-2.5"}>
+          <div className={compact ? "space-y-1.5" : "space-y-3"}>
             {/* Activos */}
             {activeContracts.length > 0 && (
               <>
