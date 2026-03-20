@@ -130,28 +130,18 @@
   to   { width: 0%; }
 }
 
-/* Dialog animations — only opacity to avoid breaking centering */
+/* Dialog animations */
 [data-slot="dialog-overlay"] {
   transition: opacity 200ms ease;
 }
-[data-slot="dialog-overlay"][data-state="closed"] {
-  opacity: 0;
-}
-[data-slot="dialog-overlay"][data-state="open"] {
-  opacity: 1;
-}
+[data-slot="dialog-overlay"][data-state="closed"] { opacity: 0; }
+[data-slot="dialog-overlay"][data-state="open"]   { opacity: 1; }
+
 [data-slot="dialog-content"] {
-  transition: opacity 220ms ease, transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 220ms ease, scale 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-[data-slot="dialog-content"][data-state="closed"] {
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.95);
-}
-[data-slot="dialog-content"][data-state="open"] {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
+[data-slot="dialog-content"][data-state="closed"] { opacity: 0; scale: 0.95; }
+[data-slot="dialog-content"][data-state="open"]   { opacity: 1; scale: 1; }
 
 /* Smooth page transitions */
 @keyframes fadeUp {
