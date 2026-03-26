@@ -8,6 +8,7 @@ import { RemindersPanel } from "@/components/reminders-panel"
 import { BrigadasPanel } from "@/components/brigadas-panel"
 import { SupernumerariosPanel } from "@/components/supernumerarios-panel"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserMenu } from "@/components/user-menu"
 import { StatsPanel } from "@/components/stats-panel"
 import { MapPanel } from "@/components/map-panel"
 import { useStore } from "@/lib/store"
@@ -89,6 +90,7 @@ export default function Home() {
             </div>
           )}
           <ThemeToggle />
+          <UserMenu />
         </div>
       </header>
 

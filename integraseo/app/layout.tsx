@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar"
 import { ToastProvider } from "@/lib/toast"
 import { ToastContainer } from "@/components/toast-container"
+import { AuthWrapper } from "@/components/auth-wrapper"
 
 export const metadata: Metadata = {
   title: "Integraseo",
@@ -39,7 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <ThemeProvider>
           <ToastProvider>
-            {children}
+            <AuthWrapper>
+              {children}
+            </AuthWrapper>
             <ToastContainer />
           </ToastProvider>
         </ThemeProvider>
