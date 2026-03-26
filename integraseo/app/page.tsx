@@ -19,26 +19,26 @@ type View = "contracts" | "calendar" | "reminders" | "brigadas" | "supernumerari
 
 // Items shown directly in the navbar pill
 const MAIN_NAV: { id: View; label: string; short: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: "contracts",       label: "Contratos",       short: "Contratos",  Icon: FileText  },
-  { id: "calendar",        label: "Calendario",      short: "Calendario", Icon: Calendar  },
-  { id: "brigadas",        label: "Brigadas",         short: "Brigadas",   Icon: Users     },
-  { id: "supernumerarios", label: "Supernumerarios",  short: "Supern.",    Icon: UserPlus  },
+  { id: "contracts", label: "Contratos", short: "Contratos", Icon: FileText },
+  { id: "calendar", label: "Calendario", short: "Calendario", Icon: Calendar },
+  { id: "brigadas", label: "Brigadas", short: "Brigadas", Icon: Users },
+  { id: "supernumerarios", label: "Supernumerarios", short: "Supern.", Icon: UserPlus },
 ]
 
 // Items hidden in the hamburger menu
 const MENU_NAV: { id: View; label: string; description: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: "stats",     label: "Estadísticas",   description: "Dashboard y métricas", Icon: BarChart2 },
-  { id: "reminders", label: "Recordatorios",  description: "Tareas y alertas",     Icon: Bell      },
-  { id: "map",       label: "Ubicaciones",    description: "Mapa de contratos",    Icon: Map       },
+  { id: "stats", label: "Estadísticas", description: "Dashboard y métricas", Icon: BarChart2 },
+  { id: "reminders", label: "Recordatorios", description: "Tareas y alertas", Icon: Bell },
+  { id: "map", label: "Ubicaciones", description: "Mapa de contratos", Icon: Map },
 ]
 
 const ALL_NAV = [...MAIN_NAV, ...MENU_NAV]
 
 export default function Home() {
-  const [currentView, setCurrentView]     = useState<View>("contracts")
-  const [menuOpen, setMenuOpen]           = useState(false)
-  const [headerSearch, setHeaderSearch]   = useState("")
-  const showSearch = ["contracts","brigadas","supernumerarios","reminders"].includes(currentView)
+  const [currentView, setCurrentView] = useState<View>("contracts")
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [headerSearch, setHeaderSearch] = useState("")
+  const showSearch = ["contracts", "brigadas", "supernumerarios", "reminders"].includes(currentView)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const reminders = useStore((s) => s.reminders)
@@ -64,7 +64,7 @@ export default function Home() {
   }, [menuOpen])
 
   const currentItem = ALL_NAV.find((n) => n.id === currentView)!
-  const isMenuView  = MENU_NAV.some((n) => n.id === currentView)
+  const isMenuView = MENU_NAV.some((n) => n.id === currentView)
 
   return (
     <div className="flex flex-col bg-background overflow-hidden" style={{ height: "100dvh" }}>
@@ -108,16 +108,16 @@ export default function Home() {
               key={currentView}
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{    opacity: 0, x: -24 }}
+              exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="h-full overflow-y-auto"
             >
-              {currentView === "stats"           && <StatsPanel />}
-              {currentView === "map"             && <MapPanel />}
-              {currentView === "contracts"       && <ContractsList search={headerSearch} />}
-              {currentView === "calendar"        && <CalendarPanel />}
-              {currentView === "reminders"       && <RemindersPanel search={headerSearch} />}
-              {currentView === "brigadas"        && <BrigadasPanel search={headerSearch} />}
+              {currentView === "stats" && <StatsPanel />}
+              {currentView === "map" && <MapPanel />}
+              {currentView === "contracts" && <ContractsList search={headerSearch} />}
+              {currentView === "calendar" && <CalendarPanel />}
+              {currentView === "reminders" && <RemindersPanel search={headerSearch} />}
+              {currentView === "brigadas" && <BrigadasPanel search={headerSearch} />}
               {currentView === "supernumerarios" && <SupernumerariosPanel search={headerSearch} />}
             </motion.div>
           </AnimatePresence>
@@ -133,8 +133,8 @@ export default function Home() {
             {menuOpen && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0,  scale: 1    }}
-                exit={{   opacity: 0, y: 8,   scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96 }}
                 transition={{ type: "spring", stiffness: 320, damping: 26 }}
                 className="absolute bottom-[calc(100%+10px)] right-0
                   w-56 bg-card border border-border rounded-2xl
@@ -156,15 +156,13 @@ export default function Home() {
                       <button
                         key={id}
                         onClick={() => navigate(id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted text-foreground"
-                        }`}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${active
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted text-foreground"
+                          }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                          active ? "bg-white/20" : "bg-muted"
-                        }`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-white/20" : "bg-muted"
+                          }`}>
                           <Icon className={`h-4 w-4 ${active ? "text-primary-foreground" : "text-muted-foreground"}`} />
                         </div>
                         <div className="flex-1 min-w-0">
