@@ -4,12 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useStore } from "@/lib/store"
 import { MapPin, Search, X, Loader2 } from "lucide-react"
 
+/* ─── Colores ────────────────────────────────────────── */
 const STATUS_DOT: Record<string, string> = {
   active:    "#10b981",
   pending:   "#f59e0b",
   completed: "#94a3b8",
 }
-
 const COLORS_HEX: Record<string, string> = {
   "bg-violet-500":"#8b5cf6","bg-sky-500":"#0ea5e9","bg-emerald-500":"#10b981",
   "bg-orange-500":"#f97316","bg-pink-500":"#ec4899","bg-indigo-500":"#6366f1",
@@ -22,87 +22,98 @@ interface GeoContract {
   location: string; color: string; lat: number; lng: number
 }
 
-// Wait for Google Maps to be ready (loaded via layout.tsx Script tag)
-function waitForGoogleMaps(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof google !== "undefined" && google.maps) return resolve()
-    const interval = setInterval(() => {
-      if (typeof google !== "undefined" && google.maps) {
-        clearInterval(interval)
-        resolve()
-      }
-    }, 100)
-    setTimeout(() => { clearInterval(interval); resolve() }, 10000)
-  })
+/* ─── Geocodificación con Nominatim (OpenStreetMap) ─── */
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const query = encodeURIComponent(`${address}, Colombia`)
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=co`,
+      { headers: { "Accept-Language": "es", "User-Agent": "Integraseo/1.0" } }
+    )
+    const data = await res.json()
+    if (data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
-async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  return new Promise((resolve) => {
-    const geocoder = new google.maps.Geocoder()
-    geocoder.geocode(
-      { address, componentRestrictions: { country: "CO" } },
-      (results, status) => {
-        if (status === "OK" && results && results[0]) {
-          const loc = results[0].geometry.location
-          resolve({ lat: loc.lat(), lng: loc.lng() })
-        } else {
-          resolve(null)
-        }
-      }
-    )
-  })
+/* ─── SVG del pin personalizado ─────────────────────── */
+function pinSvg(hex: string, initials: string) {
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
+      <defs>
+        <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/></filter>
+      </defs>
+      <path d="M22 2C13.16 2 6 9.16 6 18c0 12 16 32 16 32s16-20 16-32C38 9.16 30.84 2 22 2z"
+        fill="${hex}" filter="url(#s)"/>
+      <circle cx="22" cy="18" r="11" fill="white" opacity="0.25"/>
+      <text x="22" y="23" text-anchor="middle" font-family="system-ui,sans-serif"
+        font-size="11" font-weight="700" fill="white">${initials}</text>
+    </svg>
+  `)}`
 }
 
 export function MapPanel() {
-  const contracts     = useStore((s) => s.contracts)
+  const contracts = useStore((s) => s.contracts)
   const [geoContracts, setGeoContracts] = useState<GeoContract[]>([])
   const [loading, setLoading]           = useState(true)
   const [geocodingCount, setGeocodingCount] = useState(0)
   const [failed, setFailed]             = useState<string[]>([])
   const [search, setSearch]             = useState("")
   const [selected, setSelected]         = useState<string | null>(null)
+
   const mapRef     = useRef<HTMLDivElement>(null)
-  const googleMap  = useRef<google.maps.Map | null>(null)
-  const markers    = useRef<Record<string, google.maps.Marker>>({})
+  const leafletMap = useRef<any>(null)
+  const markers    = useRef<Record<string, any>>({})
 
   const withLocation = useMemo(() =>
     contracts.filter(c => c.location?.trim()),
     [contracts]
   )
 
-  // Init map + geocode
+  /* ── Inicializar mapa + geocodificar ─────────────────── */
   useEffect(() => {
     if (withLocation.length === 0) { setLoading(false); return }
     let cancelled = false
 
     const run = async () => {
-      await waitForGoogleMaps()
+      // Importar Leaflet dinámicamente (solo cliente)
+      const L = (await import("leaflet")).default
+
+
       if (cancelled || !mapRef.current) return
 
-      // Init map centered on Colombia
-      const map = new google.maps.Map(mapRef.current, {
-        center: { lat: 4.6097, lng: -74.0817 },
+      // Evitar doble inicialización
+      if (leafletMap.current) {
+        leafletMap.current.remove()
+        leafletMap.current = null
+      }
+
+      const map = L.map(mapRef.current, {
+        center: [4.6097, -74.0817],
         zoom: 6,
-        disableDefaultUI: false,
         zoomControl: true,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        styles: [
-          { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-          { featureType: "transit", elementType: "labels", stylers: [{ visibility: "off" }] },
-        ],
+        attributionControl: false,
       })
-      googleMap.current = map
+
+      // Tile layer OpenStreetMap — gratuito, sin API key
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(map)
+
+      leafletMap.current = map
 
       const results: GeoContract[] = []
       const failedList: string[]   = []
-      const bounds = new google.maps.LatLngBounds()
+      const points: [number, number][] = []
 
       for (let i = 0; i < withLocation.length; i++) {
         if (cancelled) return
         const c   = withLocation[i]
-        const hex = COLORS_HEX[c.color || ""] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]
+        const hex = COLORS_HEX[c.color ?? ""] ?? FALLBACK_COLORS[i % FALLBACK_COLORS.length]
         const geo = await geocodeAddress(c.location!)
         setGeocodingCount(i + 1)
 
@@ -113,49 +124,27 @@ export function MapPanel() {
             lat: geo.lat, lng: geo.lng,
           }
           results.push(gc)
+          points.push([geo.lat, geo.lng])
 
-          // Custom SVG pin
           const initials = c.name.substring(0, 2).toUpperCase()
-          const marker = new google.maps.Marker({
-            position: { lat: geo.lat, lng: geo.lng },
-            map,
-            title: c.name,
-            icon: {
-              url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
-                  <defs>
-                    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
-                      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
-                    </filter>
-                  </defs>
-                  <path d="M22 2C13.16 2 6 9.16 6 18c0 12 16 32 16 32s16-20 16-32C38 9.16 30.84 2 22 2z"
-                    fill="${hex}" filter="url(#s)"/>
-                  <circle cx="22" cy="18" r="11" fill="white" opacity="0.25"/>
-                  <text x="22" y="23" text-anchor="middle" font-family="system-ui,sans-serif"
-                    font-size="11" font-weight="700" fill="white">${initials}</text>
-                </svg>
-              `)}`,
-              scaledSize: new google.maps.Size(44, 52),
-              anchor: new google.maps.Point(22, 52),
-            },
+          const icon = L.icon({
+            iconUrl: pinSvg(hex, initials),
+            iconSize: [44, 52],
+            iconAnchor: [22, 52],
+            popupAnchor: [0, -52],
           })
 
-          const infoWindow = new google.maps.InfoWindow({
-            content: `
-              <div style="font-family:system-ui,sans-serif;padding:4px 2px;min-width:160px;">
+          const marker = L.marker([geo.lat, geo.lng], { icon })
+            .addTo(map)
+            .bindPopup(`
+              <div style="font-family:system-ui,sans-serif;padding:2px;min-width:160px;">
                 <p style="font-weight:700;font-size:13px;margin:0 0 3px;color:#111">${c.name}</p>
                 <p style="color:#6b7280;font-size:11px;margin:0 0 2px">${c.client}</p>
                 <p style="color:#9ca3af;font-size:11px;margin:0">${c.location}</p>
-              </div>`,
-          })
+              </div>`)
 
-          marker.addListener("click", () => {
-            infoWindow.open(map, marker)
-            setSelected(gc.id)
-          })
-
+          marker.on("click", () => setSelected(gc.id))
           markers.current[c.id] = marker
-          bounds.extend({ lat: geo.lat, lng: geo.lng })
 
           if (!cancelled) setGeoContracts([...results])
         } else {
@@ -166,23 +155,27 @@ export function MapPanel() {
       if (!cancelled) {
         setFailed(failedList)
         setLoading(false)
-        if (results.length > 1) map.fitBounds(bounds, 60)
-        else if (results.length === 1) map.setCenter({ lat: results[0].lat, lng: results[0].lng })
+        if (points.length > 1) map.fitBounds(points as any, { padding: [40, 40] })
+        else if (points.length === 1) map.setView(points[0], 14)
       }
     }
 
     run()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null }
+      markers.current = {}
+    }
   }, [withLocation.length])
 
-  // Pan to selected
+  /* ── Pan al seleccionado ─────────────────────────────── */
   useEffect(() => {
-    if (!selected || !googleMap.current) return
+    if (!selected || !leafletMap.current) return
     const marker = markers.current[selected]
     if (marker) {
-      googleMap.current.panTo(marker.getPosition()!)
-      googleMap.current.setZoom(15)
-      google.maps.event.trigger(marker, "click")
+      leafletMap.current.panTo(marker.getLatLng(), { animate: true })
+      leafletMap.current.setZoom(15)
+      marker.openPopup()
     }
   }, [selected])
 
@@ -195,6 +188,7 @@ export function MapPanel() {
     )
   }, [geoContracts, search])
 
+  /* ── Sin ubicaciones ─────────────────────────────────── */
   if (!loading && withLocation.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-16 text-center px-6">
@@ -211,7 +205,7 @@ export function MapPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* MAP */}
+      {/* MAPA */}
       <div className="relative shrink-0" style={{ height: "52%" }}>
         <div ref={mapRef} className="w-full h-full" />
 
@@ -232,7 +226,7 @@ export function MapPanel() {
         )}
       </div>
 
-      {/* LIST */}
+      {/* LISTA */}
       <div className="flex-1 overflow-hidden flex flex-col border-t border-border">
         <div className="shrink-0 px-4 pt-3 pb-2">
           <div className="relative">

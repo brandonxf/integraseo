@@ -69,55 +69,65 @@ interface ContractFormProps {
 }
 
 function LocationInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
 
+  const search = (q: string) => {
+    onChange(q)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (q.length < 4) { setSuggestions([]); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ", Colombia")}&format=json&limit=5&countrycodes=co&addressdetails=1`,
+          { headers: { "Accept-Language": "es", "User-Agent": "Integraseo/1.0" } }
+        )
+        const data = await res.json()
+        const names = data.map((d: any) => d.display_name as string)
+        setSuggestions(names)
+        setOpen(names.length > 0)
+      } catch { setSuggestions([]); setOpen(false) }
+    }, 400)
+  }
+
+  // Cerrar al click afuera
   useEffect(() => {
-    const el = inputRef.current
-    if (!el) return
-    let autocomplete: google.maps.places.Autocomplete | null = null
-
-    const init = () => {
-      if (typeof google === "undefined" || !google.maps?.places) return
-      autocomplete = new google.maps.places.Autocomplete(el, {
-        componentRestrictions: { country: "co" },
-        fields: ["formatted_address", "geometry"],
-        types: ["geocode", "establishment"],
-      })
-      autocomplete.addListener("place_changed", () => {
-        const place = autocomplete!.getPlace()
-        if (place.formatted_address) onChange(place.formatted_address)
-      })
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
     }
-
-    // Try immediately, or wait for Maps to load
-    if (typeof google !== "undefined" && google.maps?.places) {
-      init()
-    } else {
-      const interval = setInterval(() => {
-        if (typeof google !== "undefined" && google.maps?.places) {
-          clearInterval(interval)
-          init()
-        }
-      }, 500)
-      return () => clearInterval(interval)
-    }
-
-    return () => {
-      if (autocomplete) google.maps.event.clearInstanceListeners(autocomplete)
-    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
   }, [])
 
   return (
-    <input
-      ref={inputRef}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder="Escribe para buscar dirección..."
-      className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm
-        ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium
-        placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2
-        focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-    />
+    <div ref={wrapRef} className="relative">
+      <input
+        value={value}
+        onChange={e => search(e.target.value)}
+        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        placeholder="Escribe para buscar dirección..."
+        className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm
+          ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none
+          focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      />
+      {open && (
+        <ul className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-xl shadow-lg overflow-hidden max-h-52 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors line-clamp-2"
+                onMouseDown={() => { onChange(s); setSuggestions([]); setOpen(false) }}
+              >
+                {s}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 

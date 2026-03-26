@@ -166,3 +166,5 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: oklch(0.75 0.04 255); border-radius: 9999px; }
 .dark ::-webkit-scrollbar-thumb { background: oklch(0.30 0.04 255); }
+
+@import 'leaflet/dist/leaflet.css';
