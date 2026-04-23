@@ -1,6 +1,7 @@
 "use client"
 
 import * as XLSX from "xlsx"
+import "mapbox-gl/dist/mapbox-gl.css"
 
 import { useState, useRef, useEffect } from "react"
 import { useStore } from "@/lib/store"
@@ -152,12 +153,7 @@ function LocationInput({ value, onChange, onCoordinatesChange }: {
       if (!mapRef.current) return
       if (mapInstanceRef.current) return
       try {
-        // Cargar CSS de Mapbox
-        const link = document.createElement("link")
-        link.rel = "stylesheet"
-        link.href = "https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css"
-        document.head.appendChild(link)
-
+        // FIX: no inyectar CSS manualmente — ya se importa via mapbox-gl/dist/mapbox-gl.css
         const mapboxgl = (await import("mapbox-gl")).default
         
         mapboxgl.accessToken = MAPBOX_TOKEN
