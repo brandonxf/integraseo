@@ -55,8 +55,9 @@ function StatusPill({ status }: { status: string }) {
 
 // ── Contract form — OUTSIDE parent to prevent remount on keystroke ─────────────
 interface ContractFormProps {
-  form: { name: string; client: string; location: string; status: "active" | "completed" | "pending" }
+  form: { name: string; client: string; location: string; status: "active" | "completed" | "pending"; coordinates?: { lat: number; lng: number } | null }
   onChange: (field: string, value: string) => void
+  onCoordinatesChange?: (coords: { lat: number; lng: number } | null) => void
   valueItems: ValueItem[]
   valueInput: string
   valueError: boolean
@@ -68,31 +69,153 @@ interface ContractFormProps {
   isEditing: boolean
 }
 
-function LocationInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ""
+
+function LocationInput({ value, onChange, onCoordinatesChange }: { 
+  value: string; 
+  onChange: (v: string) => void;
+  onCoordinatesChange?: (coords: { lat: number; lng: number } | null) => void;
+}) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const [mapQuery, setMapQuery] = useState(value)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
+  const mapInitRef = useRef(false)
+  const coordinatesRef = useRef<{ lat: number; lng: number } | null>(null)
 
+  // Geocodificación con Mapbox
   const search = (q: string) => {
     onChange(q)
+    // Limpiar coordenadas cuando se escribe manualmente
+    coordinatesRef.current = null
+    if (onCoordinatesChange) onCoordinatesChange(null)
+    setMapQuery(q)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (q.length < 4) { setSuggestions([]); setOpen(false); return }
     debounceRef.current = setTimeout(async () => {
       try {
+        if (!MAPBOX_TOKEN) return
+        const query = encodeURIComponent(`${q}, Colombia`)
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ", Colombia")}&format=json&limit=5&countrycodes=co&addressdetails=1`,
-          { headers: { "Accept-Language": "es", "User-Agent": "Integraseo/1.0" } }
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?access_token=${MAPBOX_TOKEN}&country=co&limit=5&types=address,place,locality`
         )
         const data = await res.json()
-        const names = data.map((d: any) => d.display_name as string)
+        const names = data.features?.map((f: any) => f.place_name as string) || []
         setSuggestions(names)
         setOpen(names.length > 0)
+        if (names.length === 0) {
+          setShowMap(true)
+        }
       } catch { setSuggestions([]); setOpen(false) }
     }, 400)
   }
 
-  // Cerrar al click afuera
+  const openGoogleMaps = () => {
+    const query = encodeURIComponent(mapQuery || value)
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank")
+  }
+
+  const closeMap = () => {
+    setShowMap(false)
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove()
+      mapInstanceRef.current = null
+      markerRef.current = null
+    }
+    mapInitRef.current = false
+  }
+
+  useEffect(() => {
+    if (!showMap) {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove()
+        mapInstanceRef.current = null
+        markerRef.current = null
+      }
+      mapInitRef.current = false
+      return
+    }
+    if (mapInitRef.current || mapInstanceRef.current) return
+    if (!MAPBOX_TOKEN) {
+      console.warn("[LocationInput] Mapbox token no configurado")
+      return
+    }
+    mapInitRef.current = true
+
+    const init = async () => {
+      await new Promise(r => setTimeout(r, 100))
+      if (!mapRef.current) return
+      if (mapInstanceRef.current) return
+      try {
+        // Cargar CSS de Mapbox
+        const link = document.createElement("link")
+        link.rel = "stylesheet"
+        link.href = "https://api.mapbox.com/mapbox-gl-js/v3.0.0/mapbox-gl.css"
+        document.head.appendChild(link)
+
+        const mapboxgl = (await import("mapbox-gl")).default
+        
+        mapboxgl.accessToken = MAPBOX_TOKEN
+        
+        const map = new mapboxgl.Map({
+          container: mapRef.current,
+          style: "mapbox://styles/mapbox/streets-v12",
+          center: [-74.7813, 10.9685],
+          zoom: 13,
+        })
+
+        map.addControl(new mapboxgl.NavigationControl(), "top-right")
+
+        // Crear elemento para el marcador
+        const el = document.createElement("div")
+        el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#3b82f6" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3" fill="white"/></svg>`
+        el.style.width = "32px"
+        el.style.height = "32px"
+        el.style.cursor = "pointer"
+
+        map.on("click", async (e: any) => {
+          const { lng, lat } = e.lngLat
+          
+          // Guardar coordenadas exactas
+          coordinatesRef.current = { lat, lng }
+          if (onCoordinatesChange) onCoordinatesChange({ lat, lng })
+          
+          // Actualizar o crear marcador
+          if (markerRef.current) {
+            markerRef.current.setLngLat([lng, lat])
+          } else {
+            markerRef.current = new mapboxgl.Marker({ element: el })
+              .setLngLat([lng, lat])
+              .addTo(map)
+          }
+          
+          // Reverse geocoding con Mapbox
+          try {
+            const res = await fetch(
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&country=co&limit=1&types=address,place,locality`
+            )
+            const data = await res.json()
+            if (data.features && data.features.length > 0) {
+              const placeName = data.features[0].place_name
+              onChange(placeName)
+              setMapQuery(placeName)
+            }
+          } catch {}
+        })
+
+        mapInstanceRef.current = map
+      } catch (err) {
+        console.error("Map error:", err)
+      }
+    }
+    init()
+  }, [showMap])
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
@@ -127,12 +250,49 @@ function LocationInput({ value, onChange }: { value: string; onChange: (v: strin
           ))}
         </ul>
       )}
+      {!open && value.length >= 4 && suggestions.length === 0 && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="flex items-center gap-2 text-xs text-primary hover:text-primary/80 transition-colors"
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            {showMap ? "Ocultar mapa" : "Buscar en mapa"}
+          </button>
+          {showMap && (
+            <div className="mt-2 rounded-xl border border-border overflow-hidden">
+              <div ref={mapRef} className="h-48 w-full" />
+              <div className="flex gap-2 p-2 bg-muted/50">
+                <button
+                  type="button"
+                  onClick={openGoogleMaps}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  Abrir en Google Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={closeMap}
+                  className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-accent transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center py-1.5 bg-muted/30">
+                Haz clic en el mapa para colocar el marcador
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 function ContractForm({
-  form, onChange, valueItems, valueInput, valueError,
+  form, onChange, onCoordinatesChange, valueItems, valueInput, valueError,
   onValueInputChange, onAddValueItem, onRemoveValueItem,
   onSubmit, onCancel, isEditing,
 }: ContractFormProps) {
@@ -157,7 +317,11 @@ function ContractForm({
         <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Ubicación
         </Label>
-        <LocationInput value={form.location} onChange={(v) => onChange("location", v)} />
+        <LocationInput 
+          value={form.location} 
+          onChange={(v) => onChange("location", v)} 
+          onCoordinatesChange={onCoordinatesChange}
+        />
       </div>
 
       <div className="space-y-1.5">
@@ -305,7 +469,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const [workerToDelete, setWorkerToDelete]         = useState<string | null>(null)
 
   const [form, setForm] = useState({
-    name: "", client: "", location: "", status: "active" as "active" | "completed" | "pending",
+    name: "", client: "", location: "", status: "active" as "active" | "completed" | "pending", coordinates: null as { lat: number; lng: number } | null,
   })
   const [workerForm, setWorkerForm] = useState({ name: "", position: "", phone: "" })
 
@@ -314,12 +478,15 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const handleFormChange = (field: string, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }))
 
+  const handleCoordinatesChange = (coords: { lat: number; lng: number } | null) =>
+    setForm((prev) => ({ ...prev, coordinates: coords }))
+
   const handleWorkerChange = (field: string, value: string) =>
     setWorkerForm((prev) => ({ ...prev, [field]: value }))
 
   const openAdd = () => {
     setEditingId(null)
-    setForm({ name: "", client: "", location: "", status: "active" })
+    setForm({ name: "", client: "", location: "", status: "active", coordinates: null })
     setValueItems([]); setValueInput(""); setValueError(false)
     setModalOpen(true)
   }
@@ -327,7 +494,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
   const openEdit = (id: string) => {
     const c = contracts.find((c) => c.id === id); if (!c) return
     setEditingId(id)
-    setForm({ name: c.name, client: c.client, location: c.location || "", status: c.status })
+    setForm({ name: c.name, client: c.client, location: c.location || "", status: c.status, coordinates: c.coordinates || null })
     setValueItems(c.valueItems || []); setValueInput(""); setValueError(false)
     setModalOpen(true)
   }
@@ -625,7 +792,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
           <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Editar Contrato</DialogTitle></DialogHeader>
             <ContractForm
-              form={form} onChange={handleFormChange}
+              form={form} onChange={handleFormChange} onCoordinatesChange={handleCoordinatesChange}
               valueItems={valueItems} valueInput={valueInput} valueError={valueError}
               onValueInputChange={(v) => { setValueInput(v); setValueError(false) }}
               onAddValueItem={addValueItem}
@@ -795,7 +962,7 @@ export function ContractsList({ search = "" }: { search?: string }) {
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nuevo Contrato</DialogTitle></DialogHeader>
           <ContractForm
-            form={form} onChange={handleFormChange}
+            form={form} onChange={handleFormChange} onCoordinatesChange={handleCoordinatesChange}
             valueItems={valueItems} valueInput={valueInput} valueError={valueError}
             onValueInputChange={(v) => { setValueInput(v); setValueError(false) }}
             onAddValueItem={addValueItem}

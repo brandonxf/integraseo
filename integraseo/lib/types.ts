@@ -33,6 +33,7 @@ export interface Contract {
   name: string
   client: string
   location?: string
+  coordinates?: { lat: number; lng: number }  // Coordenadas exactas del mini mapa
   valueItems: ValueItem[]
   status: "active" | "completed" | "pending"
   notes: ContractNote[]

@@ -56,6 +56,7 @@ interface AppState {
   deleteReminder: (id: string) => Promise<void>
   toggleReminder: (id: string) => Promise<void>
   getBrigadaServices: (contractId: string) => Promise<BrigadaServices>
+  getAllBrigadaServices: () => Promise<Record<string, BrigadaServices>>
   updateBrigadaServices: (contractId: string, services: Partial<BrigadaServices>) => Promise<void>
   getSupernumerarios: (contractId: string) => Promise<Supernumerario[]>
   addSupernumerario: (contractId: string, sup: Omit<Supernumerario, "createdAt">) => Promise<void>
@@ -253,6 +254,17 @@ export const useStore = create<AppState>((set, get) => ({
       if (snap.exists()) return snap.data() as BrigadaServices
       return { jardineria: false, aseo: false }
     } catch { return { jardineria: false, aseo: false } }
+  },
+
+  getAllBrigadaServices: async () => {
+    try {
+      const snap = await getDocs(col("brigadas"))
+      const result: Record<string, BrigadaServices> = {}
+      snap.docs.forEach((doc) => {
+        result[doc.id] = doc.data() as BrigadaServices
+      })
+      return result
+    } catch { return {} }
   },
 
   updateBrigadaServices: async (contractId, services) => {
